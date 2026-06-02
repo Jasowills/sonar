@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Cable, ExternalLink, Monitor, Package, Terminal } from 'lucide-react'
+import { AlertTriangle, Cable, Copy, ExternalLink, Monitor, Package, Terminal } from 'lucide-react'
 import { useServices, useMonitors, useErrorGroups, useDeployments, useEnvironments } from '@/lib/api'
 import { useSelectedProject } from '@/hooks/use-selected-project'
 
@@ -57,7 +57,8 @@ function ConnectionRow({
 }
 
 export function ConnectionsPage() {
-  const { projectSlug } = useSelectedProject()
+  const { project } = useSelectedProject()
+  const projectSlug = project?.slug
   const { data: services, isLoading: servicesLoading } = useServices(projectSlug)
   const { data: monitors } = useMonitors(projectSlug)
   const { data: errorGroups } = useErrorGroups(projectSlug)
@@ -65,6 +66,17 @@ export function ConnectionsPage() {
   const { data: environments } = useEnvironments(projectSlug)
 
   const [search, setSearch] = useState('')
+  const [copiedNpm, setCopiedNpm] = useState(false)
+  const [copiedInit, setCopiedInit] = useState(false)
+  const [copiedEnvKey, setCopiedEnvKey] = useState<string | null>(null)
+
+  const handleCopy = (text: string, setter: (v: boolean) => void) => {
+    void navigator.clipboard.writeText(text)
+    setter(true)
+    setTimeout(() => setter(false), 2000)
+  }
+
+  const envKey = environments?.[0]?.key ?? 'production'
 
   if (servicesLoading) {
     return (
@@ -76,12 +88,121 @@ export function ConnectionsPage() {
 
   if (!services || services.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <Cable className="mb-4 h-10 w-10 text-[var(--text-muted)]" />
-        <p className="text-lg font-semibold text-[var(--text-main)]">No connections</p>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Install the Watchdog SDK in your services to see them here.
-        </p>
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* SDK Quickstart */}
+        <section className="border border-[var(--border-soft)] bg-[var(--surface-panel)] p-6">
+          <div className="flex items-center gap-3">
+            <Package className="h-5 w-5 text-[var(--text-main)]" />
+            <p className="text-sm font-semibold text-[var(--text-main)]">Connect your first service</p>
+          </div>
+          <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
+            Install the Watchdog SDK and start sending errors and deployment events.
+          </p>
+
+          <div className="mt-6 space-y-4">
+            {/* Step 1: Install */}
+            <div>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">1. Install the package</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 border border-[var(--border-soft)] bg-[var(--surface-page)] px-3 py-2 text-xs font-mono text-[var(--text-main)]">
+                  npm install @watchdog/sdk
+                </code>
+                <button
+                  onClick={() => handleCopy('npm install @watchdog/sdk', setCopiedNpm)}
+                  className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-2 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                >
+                  <Copy className="h-3 w-3" />
+                  {copiedNpm ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* Step 2: Init */}
+            <div>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">2. Initialize with your project key</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 border border-[var(--border-soft)] bg-[var(--surface-page)] px-3 py-2 text-xs font-mono text-[var(--text-main)] whitespace-pre">
+                  {`import { Watchdog } from '@watchdog/sdk'
+
+const watchdog = new Watchdog({
+  projectKey: '${projectSlug ?? 'your-project-slug'}',
+  environment: '${envKey}',
+})`}
+                </code>
+                <button
+                  onClick={() => {
+                    const snippet = `import { Watchdog } from '@watchdog/sdk'\n\nconst watchdog = new Watchdog({\n  projectKey: '${projectSlug ?? 'your-project-slug'}',\n  environment: '${envKey}',\n})`
+                    handleCopy(snippet, setCopiedInit)
+                  }}
+                  className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-2 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                >
+                  <Copy className="h-3 w-3" />
+                  {copiedInit ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            {/* Step 3: Capture */}
+            <div>
+              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">3. Capture errors</p>
+              <code className="block border border-[var(--border-soft)] bg-[var(--surface-page)] px-3 py-2 text-xs font-mono text-[var(--text-main)]">
+                watchdog.captureError(error)
+              </code>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <a
+              href="/docs"
+              className="inline-flex items-center gap-1 border border-[var(--border-soft)] px-4 py-2 text-xs font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
+            >
+              <ExternalLink className="h-3 w-3" />
+              View full SDK documentation
+            </a>
+          </div>
+        </section>
+
+        {/* Environment keys */}
+        {environments && environments.length > 0 && (
+          <section className="border border-[var(--border-soft)] p-6">
+            <div className="flex items-center gap-3">
+              <Terminal className="h-5 w-5 text-[var(--text-muted)]" />
+              <p className="text-sm font-semibold text-[var(--text-main)]">Environment keys</p>
+            </div>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
+              Use these environment keys when initializing the SDK.
+            </p>
+            <div className="mt-4 divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
+              {environments.map((env) => (
+                <div key={env.id} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="block h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: env.color ?? 'var(--text-muted)' }}
+                    />
+                    <span className="text-sm font-medium text-[var(--text-main)]">{env.name}</span>
+                    <code className="text-xs font-mono text-[var(--text-soft)]">{env.key}</code>
+                  </div>
+                  <button
+                    onClick={() => handleCopy(env.key, (v) => { setCopiedEnvKey(v ? env.key : null) })}
+                    className="flex items-center gap-1 border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                  >
+                    <Copy className="h-2.5 w-2.5" />
+                    {copiedEnvKey === env.key ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="flex flex-col items-center justify-center py-8">
+          <Cable className="mb-4 h-10 w-10 text-[var(--text-muted)]" />
+          <p className="text-lg font-semibold text-[var(--text-main)]">No connections yet</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Use the SDK above to connect your services. They will appear here.
+          </p>
+        </div>
       </div>
     )
   }

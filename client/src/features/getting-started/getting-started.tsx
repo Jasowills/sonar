@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle2, Circle, Code2, Rocket, Server, Webhook } from 'lucide-react'
-import { useEnvironments, useProjects, useServices, useWorkspaces } from '@/lib/api'
+import { CheckCircle2, Circle, Code2, ExternalLink, Rocket, Server, Webhook } from 'lucide-react'
+import { useEnvironments, useProjects, useRecordDeployment, useServices, useWorkspaces } from '@/lib/api'
 import { CreateProjectModal } from '@/features/create/create-project-modal'
 import { CreateEnvironmentModal } from '@/features/create/create-environment-modal'
 import { CreateServiceModal } from '@/features/create/create-service-modal'
@@ -17,6 +17,7 @@ export function GettingStarted({ hasMonitors, hasDeploys }: GettingStartedProps)
   const project = projects?.[0]
   const { data: environments } = useEnvironments(project?.slug)
   const { data: services } = useServices(project?.slug)
+  const { mutateAsync: recordDeploy, isPending: deploying } = useRecordDeployment()
 
   const workspaceId = workspaces?.[0]?.id ?? ''
   const hasProject = (projects?.length ?? 0) > 0
@@ -27,6 +28,16 @@ export function GettingStarted({ hasMonitors, hasDeploys }: GettingStartedProps)
   const [showCreateEnvironment, setShowCreateEnvironment] = useState(false)
   const [showCreateService, setShowCreateService] = useState(false)
   const [showCreateMonitor, setShowCreateMonitor] = useState(false)
+
+  const handleRecordDeploy = async () => {
+    const env = environments?.[0]
+    if (!env) return
+    await recordDeploy({
+      environmentId: env.id,
+      version: `manual-${Date.now()}`,
+      description: 'Manual deployment from getting started',
+    })
+  }
 
   const steps = [
     {
@@ -87,7 +98,25 @@ export function GettingStarted({ hasMonitors, hasDeploys }: GettingStartedProps)
       description: 'POST deployment events to track releases alongside your monitors and traces.',
       done: hasDeploys,
       icon: Code2,
-      actions: null,
+      actions: !hasDeploys ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button
+            onClick={handleRecordDeploy}
+            disabled={deploying || !environments?.[0]}
+            className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-1.5 text-xs font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)] disabled:opacity-40"
+          >
+            <Code2 className="h-3 w-3" />
+            {deploying ? 'Recording…' : 'Record a deploy'}
+          </button>
+          <a
+            href="/docs"
+            className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View docs
+          </a>
+        </div>
+      ) : null,
     },
   ]
 
