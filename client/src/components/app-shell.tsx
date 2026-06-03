@@ -1,16 +1,17 @@
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
 import { LogoMark } from '@/components/logo'
 import { Avatar } from '@/components/avatar'
 
-import { navigationItems } from '@/data/mock-data'
+import { navigationGroups } from '@/data/navigation'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { useWorkspaces } from '@/lib/api'
 import { useSelectedProject } from '@/hooks/use-selected-project'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationPanel } from '@/components/notification-panel'
+import { ToastContainer } from '@/components/toast-container'
 
 type AppShellProps = {
   title: string
@@ -102,6 +103,10 @@ export function AppShell({
   const { project } = useSelectedProject()
   const workspaceName = workspaces?.[0]?.name ?? 'Workspace'
 
+  useEffect(() => {
+    document.title = title ? `${title} — Watchdog` : 'Watchdog'
+  }, [title])
+
   return (
     <div className="min-h-screen bg-[var(--surface-page)] text-[var(--text-main)]">
       {/* Navbar */}
@@ -149,32 +154,38 @@ export function AppShell({
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >
-          <nav className="flex flex-col gap-0.5 p-4">
-            <div className="mb-3 px-3 py-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                Navigation
-              </p>
-            </div>
-            {navigationItems.map((item) => {
-              const isActive = location.pathname === item.path
-              const Icon = item.icon
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-[var(--surface-panel-soft)] text-[var(--text-main)]'
-                      : 'text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]',
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </NavLink>
-              )
-            })}
+          <nav className="flex flex-col gap-4 p-4">
+            {navigationGroups.map((group) => (
+              <div key={group.label}>
+                <div className="mb-1 px-3 py-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--text-soft)]">
+                    {group.label}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map((item) => {
+                    const isActive = location.pathname === item.path
+                    const Icon = item.icon
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-[var(--surface-panel-soft)] text-[var(--text-main)]'
+                            : 'text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]',
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </aside>
 
@@ -205,6 +216,8 @@ export function AppShell({
           {children}
         </main>
       </div>
+
+      <ToastContainer />
     </div>
   )
 }

@@ -1,5 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 
+import { ApiKeyGuard } from '../auth/api-key.guard';
 import { ErrorGroupModel } from './models/error-group.model';
 import { RecordErrorInput } from './errors.inputs';
 import { ErrorsService } from './errors.service';
@@ -9,6 +11,7 @@ import { ErrorsService } from './errors.service';
  * simple POST — no GraphQL client needed.
  *
  *   curl -X POST http://localhost:8080/ingest/errors \
+ *     -H 'authorization: Bearer <api-key>' \
  *     -H 'content-type: application/json' \
  *     -d '{"fingerprint":"checkout:TypeError:cart","message":"Cannot read properties of undefined","environmentId":"env_production","projectId":"project_core-platform"}'
  */
@@ -16,6 +19,8 @@ import { ErrorsService } from './errors.service';
 export class ErrorsController {
   constructor(private readonly errorsService: ErrorsService) {}
 
+  @SkipThrottle()
+  @UseGuards(ApiKeyGuard)
   @Post()
   record(@Body() input: RecordErrorInput): Promise<ErrorGroupModel> {
     return this.errorsService.record(input);

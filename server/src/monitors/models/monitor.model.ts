@@ -27,7 +27,13 @@ export class MonitorModel {
   isActive!: boolean;
 
   @Field()
+  serviceId!: string;
+
+  @Field()
   serviceName!: string;
+
+  @Field()
+  environmentId!: string;
 
   @Field()
   environmentName!: string;

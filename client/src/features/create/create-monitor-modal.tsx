@@ -1,26 +1,32 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { Modal, Field } from './modal'
 import {
   useCreateMonitor,
+  useUpdateMonitor,
   useEnvironments,
   useServices,
 } from '@/lib/api'
+import type { Monitor } from '@/lib/api'
 import { useSelectedProject } from '@/hooks/use-selected-project'
+import { parseGraphqlError } from '@/lib/utils'
 import { CreateServiceModal } from './create-service-modal'
 import { CreateEnvironmentModal } from './create-environment-modal'
 
 type Props = {
   open: boolean
   onClose: () => void
+  monitor?: Monitor
 }
 
-export function CreateMonitorModal({ open, onClose }: Props) {
+export function CreateMonitorModal({ open, onClose, monitor }: Props) {
   const { project } = useSelectedProject()
   const projectSlug = project?.slug
   const { data: services } = useServices(projectSlug)
   const { data: environments } = useEnvironments(projectSlug)
-  const { mutateAsync, isPending, error } = useCreateMonitor()
+  const createMutation = useCreateMonitor()
+  const updateMutation = useUpdateMonitor()
+  const isEditing = !!monitor
 
   const [name, setName] = useState('')
   const [targetUrl, setTargetUrl] = useState('')
@@ -32,25 +38,49 @@ export function CreateMonitorModal({ open, onClose }: Props) {
   const [showCreateService, setShowCreateService] = useState(false)
   const [showCreateEnvironment, setShowCreateEnvironment] = useState(false)
 
+  useEffect(() => {
+    if (monitor) {
+      setName(monitor.name)
+      setTargetUrl(monitor.targetUrl)
+      setMethod(monitor.method)
+      setServiceId(monitor.serviceId)
+      setEnvironmentId(monitor.environmentId)
+      setIntervalSeconds(monitor.intervalSeconds)
+    } else {
+      setName('')
+      setTargetUrl('')
+      setMethod('GET')
+      setServiceId('')
+      setEnvironmentId('')
+      setIntervalSeconds(30)
+    }
+  }, [monitor, open])
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !targetUrl.trim() || !serviceId || !environmentId) return
-    await mutateAsync({
+
+    const input = {
       name: name.trim(),
-      targetUrl: targetUrl.trim(),
+      targetUrl: targetUrl.trim().match(/^https?:\/\//)
+        ? targetUrl.trim()
+        : `http://${targetUrl.trim()}`,
       method,
       serviceId,
       environmentId,
       intervalSeconds,
-    })
-    setName('')
-    setTargetUrl('')
-    setMethod('GET')
-    setServiceId('')
-    setEnvironmentId('')
-    setIntervalSeconds(30)
+    }
+
+    if (isEditing && monitor) {
+      await updateMutation.mutateAsync({ id: monitor.id, ...input })
+    } else {
+      await createMutation.mutateAsync(input)
+    }
     onClose()
   }
+
+  const submitting = createMutation.isPending || updateMutation.isPending
+  const errorMessages = parseGraphqlError(createMutation.error ?? updateMutation.error)
 
   if (!open) return null
 
@@ -59,12 +89,12 @@ export function CreateMonitorModal({ open, onClose }: Props) {
       <Modal
         open={open}
         onClose={onClose}
-        title="Create monitor"
-        submitLabel="Create"
-        submitting={isPending}
+        title={isEditing ? 'Edit monitor' : 'Create monitor'}
+        submitLabel={isEditing ? 'Save' : 'Create'}
+        submitting={submitting}
         onSubmit={handleSubmit}
       >
-        <Field label="Name" error={error?.message}>
+        <Field label="Name" errors={errorMessages}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

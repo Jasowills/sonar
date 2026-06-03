@@ -1,6 +1,7 @@
-import { Plus, Radar } from 'lucide-react'
+import { Pencil, Plus, Radar, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useMonitors } from '@/lib/api'
+import { useDeleteMonitor, useMonitors } from '@/lib/api'
+import type { Monitor } from '@/lib/api'
 import {
   formatInterval,
   formatLatency,
@@ -11,7 +12,10 @@ import { CreateMonitorModal } from '@/features/create/create-monitor-modal'
 
 export function MonitorsPage() {
   const { data: monitors, isLoading, isError, refetch } = useMonitors()
+  const { mutateAsync: deleteMonitor } = useDeleteMonitor()
   const [showCreateMonitor, setShowCreateMonitor] = useState(false)
+  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   if (isLoading) {
     return <PageNotice variant="loading" message="Loading monitors…" />
@@ -86,13 +90,72 @@ export function MonitorsPage() {
                     <span className={`inline-block h-2 w-2 ${state.dotClass}`} />
                     {state.label}
                   </span>
+                  <div className="flex items-center gap-1 border-l border-[var(--border-soft)] pl-3">
+                    <button
+                      onClick={() => setEditingMonitor(monitor)}
+                      className="flex h-7 w-7 items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
+                      title="Edit monitor"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingId(monitor.id)}
+                      className="flex h-7 w-7 items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--dot-down)]"
+                      title="Delete monitor"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )
           })}
         </div>
       </div>
-      <CreateMonitorModal open={showCreateMonitor} onClose={() => setShowCreateMonitor(false)} />
+
+      <CreateMonitorModal
+        open={showCreateMonitor}
+        onClose={() => setShowCreateMonitor(false)}
+      />
+
+      <CreateMonitorModal
+        open={!!editingMonitor}
+        monitor={editingMonitor ?? undefined}
+        onClose={() => setEditingMonitor(null)}
+      />
+
+      {/* Delete confirmation */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm border border-[var(--border-soft)] bg-[var(--surface-page)]">
+            <div className="border-b border-[var(--border-soft)] px-5 py-4">
+              <p className="text-sm font-semibold text-[var(--text-main)]">Delete monitor</p>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-sm text-[var(--text-muted)]">
+                Are you sure you want to delete this monitor? This action cannot be undone.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setDeletingId(null)}
+                  className="border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    void deleteMonitor(deletingId)
+                    setDeletingId(null)
+                  }}
+                  className="border border-[var(--dot-down)] px-4 py-2 text-sm text-[var(--dot-down)] hover:bg-[var(--dot-down)]/10"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

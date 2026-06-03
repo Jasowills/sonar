@@ -54,4 +54,14 @@ export class WorkspacesService {
       mapPrismaError(error);
     }
   }
+
+  async remove(id: string): Promise<boolean> {
+    try {
+      await this.prisma.membership.deleteMany({ where: { workspaceId: id } });
+      await this.prisma.workspace.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

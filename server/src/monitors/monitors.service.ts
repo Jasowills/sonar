@@ -17,8 +17,8 @@ type MonitorViewSource = {
   timeoutSeconds: number;
   isActive: boolean;
   updatedAt: Date;
-  service: { name: string };
-  environment: { name: string };
+  service: { id: string; name: string };
+  environment: { id: string; name: string };
   checkResults: Array<{ state: string; latencyMs: number | null }>;
 };
 
@@ -101,6 +101,8 @@ export class MonitorsService {
           intervalSeconds: input.intervalSeconds,
           timeoutSeconds: input.timeoutSeconds,
           isActive: input.isActive,
+          ...(input.serviceId !== undefined ? { serviceId: input.serviceId } : {}),
+          ...(input.environmentId !== undefined ? { environmentId: input.environmentId } : {}),
           updatedAt: new Date(),
         },
         include: monitorInclude,
@@ -133,9 +135,11 @@ export class MonitorsService {
       intervalSeconds: monitor.intervalSeconds,
       timeoutSeconds: monitor.timeoutSeconds,
       isActive: monitor.isActive,
+      serviceId: monitor.service.id,
       serviceName: monitor.service.name,
+      environmentId: monitor.environment.id,
       environmentName: monitor.environment.name,
-      latestState: latestCheck?.state ?? 'HEALTHY',
+      latestState: latestCheck?.state ?? 'PENDING',
       latestLatencyMs: latestCheck?.latencyMs ?? null,
       updatedAt: monitor.updatedAt,
     };

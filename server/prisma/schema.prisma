@@ -111,7 +111,7 @@ model Service {
 model ApiKey {
   id             String    @id @default(cuid()) @map("_id")
   name           String
-  key            String    @unique
+  keyHash        String    @unique
   prefix         String
   lastUsedAt     DateTime?
   expiresAt      DateTime?

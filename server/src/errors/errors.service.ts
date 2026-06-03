@@ -5,6 +5,7 @@ import * as crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../shared/prisma-errors';
 import { fallbackErrorGroups } from '../shared/fallback-data';
+import { ErrorEventModel } from './models/error-event.model';
 import { ErrorGroupModel, ErrorGroupStatus } from './models/error-group.model';
 import { RecordErrorInput } from './errors.inputs';
 
@@ -187,6 +188,40 @@ export class ErrorsService {
         errorGroupId,
       },
     });
+  }
+
+  async updateStatus(id: string, status: string): Promise<ErrorGroupModel | null> {
+    try {
+      const group = await this.prisma.errorGroup.update({
+        where: { id },
+        data: { status, updatedAt: new Date() },
+        include: { environment: true, service: true },
+      });
+      return this.toView(group);
+    } catch {
+      return null;
+    }
+  }
+
+  async findEvents(groupId: string): Promise<ErrorEventModel[]> {
+    try {
+      const events = await this.prisma.errorEvent.findMany({
+        where: { errorGroupId: groupId },
+        orderBy: { occurredAt: 'desc' },
+      });
+      return events.map((e) => ({
+        id: e.id,
+        eventKey: e.eventKey,
+        message: e.message,
+        stack: e.stack,
+        release: e.release,
+        metadata: e.metadata !== null && e.metadata !== undefined ? String(e.metadata) : null,
+        occurredAt: e.occurredAt,
+        errorGroupId: e.errorGroupId,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private normalizeStatus(status?: string | null): ErrorGroupStatus {

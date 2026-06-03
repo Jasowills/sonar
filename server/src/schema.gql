@@ -2,6 +2,20 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddIncidentUpdateInput {
+  actorUserId: String
+  body: String!
+  incidentId: String!
+  kind: String!
+}
+
+input AddStatusPageServiceInput {
+  displayName: String
+  serviceId: String!
+  sortOrder: Int
+  statusPageId: String!
+}
+
 type AlertChannelModel {
   createdAt: DateTime!
   creatorUserId: String
@@ -53,6 +67,25 @@ type ApiKeyWithSecret {
   projectId: String!
 }
 
+input CreateAlertChannelInput {
+  destination: String!
+  name: String!
+  secretRef: String
+  type: String!
+  workspaceId: String!
+}
+
+input CreateAlertRuleInput {
+  alertChannelId: String!
+  environmentId: String
+  minimumSeverity: String
+  name: String!
+  projectId: String
+  serviceId: String
+  triggerType: String!
+  workspaceId: String!
+}
+
 input CreateApiKeyInput {
   expiresAt: String
   name: String!
@@ -64,6 +97,17 @@ input CreateEnvironmentInput {
   key: String!
   name: String!
   projectId: String!
+}
+
+input CreateIncidentInput {
+  environmentId: String
+  ownerUserId: String
+  projectId: String!
+  serviceId: String
+  severity: String!
+  summary: String
+  title: String!
+  workspaceId: String!
 }
 
 input CreateMonitorInput {
@@ -89,6 +133,13 @@ input CreateServiceInput {
   name: String!
   projectId: String!
   slug: String
+}
+
+input CreateStatusPageInput {
+  headline: String
+  name: String!
+  projectId: String
+  workspaceId: String!
 }
 
 input CreateWorkspaceInput {
@@ -126,6 +177,17 @@ type EnvironmentModel {
   key: String!
   name: String!
   projectId: String!
+}
+
+type ErrorEventModel {
+  errorGroupId: String!
+  eventKey: String!
+  id: String!
+  message: String!
+  metadata: String
+  occurredAt: DateTime!
+  release: String
+  stack: String
 }
 
 type ErrorGroupModel {
@@ -167,7 +229,30 @@ type IncidentModel {
   workspaceId: String!
 }
 
+type IncidentUpdateModel {
+  actorUserId: String
+  body: String!
+  createdAt: DateTime!
+  id: String!
+  incidentId: String!
+  kind: String!
+}
+
+type MemberModel {
+  id: String!
+  role: String!
+  user: MemberUserModel!
+}
+
+type MemberUserModel {
+  avatarUrl: String
+  email: String!
+  fullName: String
+  id: String!
+}
+
 type MonitorModel {
+  environmentId: String!
   environmentName: String!
   expectedStatus: Int!
   id: String!
@@ -177,6 +262,7 @@ type MonitorModel {
   latestState: String!
   method: String!
   name: String!
+  serviceId: String!
   serviceName: String!
   targetUrl: String!
   timeoutSeconds: Int!
@@ -184,25 +270,42 @@ type MonitorModel {
 }
 
 type Mutation {
+  addIncidentUpdate(input: AddIncidentUpdateInput!): IncidentUpdateModel!
+  addStatusPageService(input: AddStatusPageServiceInput!): Boolean!
+  createAlertChannel(input: CreateAlertChannelInput!): AlertChannelModel!
+  createAlertRule(input: CreateAlertRuleInput!): AlertRuleModel!
   createApiKey(input: CreateApiKeyInput!): ApiKeyWithSecret!
   createEnvironment(input: CreateEnvironmentInput!): EnvironmentModel!
+  createIncident(input: CreateIncidentInput!): IncidentModel!
   createMonitor(input: CreateMonitorInput!): MonitorModel!
   createProject(input: CreateProjectInput!): ProjectModel!
   createService(input: CreateServiceInput!): ServiceModel!
+  createStatusPage(input: CreateStatusPageInput!): StatusPageModel!
   createWorkspace(input: CreateWorkspaceInput!): WorkspaceModel!
+  deleteAlertChannel(id: String!): AlertChannelModel!
+  deleteAlertRule(id: String!): AlertRuleModel!
   deleteEnvironment(id: String!): Boolean!
   deleteMonitor(id: String!): Boolean!
   deleteProject(id: String!): Boolean!
   deleteService(id: String!): Boolean!
+  deleteStatusPage(id: String!): Boolean!
+  deleteWorkspace(id: String!): Boolean!
   markAllNotificationsRead: Boolean!
   markNotificationRead(id: String!): Boolean!
   recordDeployment(input: RecordDeploymentInput!): DeploymentModel!
   recordError(input: RecordErrorInput!): ErrorGroupModel!
+  removeStatusPageService(input: RemoveStatusPageServiceInput!): Boolean!
+  resolveIncident(input: ResolveIncidentInput!): IncidentModel!
   revokeApiKey(input: RevokeApiKeyInput!): ApiKeyModel!
+  updateAlertChannel(input: UpdateAlertChannelInput!): AlertChannelModel!
+  updateAlertRule(input: UpdateAlertRuleInput!): AlertRuleModel!
   updateEnvironment(input: UpdateEnvironmentInput!): EnvironmentModel!
+  updateErrorGroupStatus(input: UpdateErrorGroupStatusInput!): ErrorGroupModel!
+  updateIncident(input: UpdateIncidentInput!): IncidentModel!
   updateMonitor(input: UpdateMonitorInput!): MonitorModel!
   updateProject(input: UpdateProjectInput!): ProjectModel!
   updateService(input: UpdateServiceInput!): ServiceModel!
+  updateStatusPage(input: UpdateStatusPageInput!): StatusPageModel!
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceModel!
 }
 
@@ -256,8 +359,11 @@ type Query {
   apiKeys(projectId: String!): [ApiKeyModel!]!
   deployments(environmentKey: String, limit: Int, projectSlug: String): [DeploymentModel!]!
   environments(projectSlug: String): [EnvironmentModel!]!
+  errorEvents(groupId: String!): [ErrorEventModel!]!
   errorGroups(environmentKey: String, limit: Int, projectSlug: String, serviceId: String): [ErrorGroupModel!]!
+  incidentUpdates(incidentId: String!): [IncidentUpdateModel!]!
   incidents: [IncidentModel!]!
+  members(workspaceId: String!): [MemberModel!]!
   monitors(environmentKey: String, projectSlug: String): [MonitorModel!]!
   notifications(limit: Int, workspaceId: String): [NotificationModel!]!
   overviewSnapshot(workspaceSlug: String): OverviewSnapshotModel!
@@ -293,6 +399,16 @@ input RecordErrorInput {
   stack: String
 }
 
+input RemoveStatusPageServiceInput {
+  serviceId: String!
+  statusPageId: String!
+}
+
+input ResolveIncidentInput {
+  id: String!
+  summary: String
+}
+
 input RevokeApiKeyInput {
   id: String!
 }
@@ -319,13 +435,44 @@ type StatusPageModel {
   workspaceId: String!
 }
 
+input UpdateAlertChannelInput {
+  destination: String
+  id: String!
+  isEnabled: Boolean
+  name: String
+}
+
+input UpdateAlertRuleInput {
+  alertChannelId: String
+  id: String!
+  isEnabled: Boolean
+  minimumSeverity: String
+  name: String
+  triggerType: String
+}
+
 input UpdateEnvironmentInput {
   color: String
   id: String!
   name: String
 }
 
+input UpdateErrorGroupStatusInput {
+  id: String!
+  status: String!
+}
+
+input UpdateIncidentInput {
+  id: String!
+  ownerUserId: String
+  severity: String
+  status: String
+  summary: String
+  title: String
+}
+
 input UpdateMonitorInput {
+  environmentId: String
   expectedKeyword: String
   expectedStatus: Int
   id: String!
@@ -333,6 +480,7 @@ input UpdateMonitorInput {
   isActive: Boolean
   method: String
   name: String
+  serviceId: String
   targetUrl: String
   timeoutSeconds: Int
 }
@@ -346,6 +494,13 @@ input UpdateServiceInput {
   description: String
   id: String!
   name: String
+}
+
+input UpdateStatusPageInput {
+  headline: String
+  id: String!
+  name: String
+  visibility: String
 }
 
 input UpdateWorkspaceInput {

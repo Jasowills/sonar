@@ -7,9 +7,12 @@ import {
   HttpException,
   Post,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import * as bcrypt from 'bcrypt';
 import { AppService } from './app.service';
+import { ApiKeysService } from './api-keys/api-keys.service';
 import { extractBearerToken, issueToken, verifyToken } from './auth/jwt';
+import { Public } from './auth/public.decorator';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
@@ -17,13 +20,16 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly prisma: PrismaService,
+    private readonly apiKeysService: ApiKeysService,
   ) {}
 
+  @Public()
   @Get()
   getStatus() {
     return this.appService.getStatus();
   }
 
+  @Public()
   @Post('auth/google')
   async authGoogle(@Body() body: { code: string; redirectUri: string }) {
     const { code, redirectUri } = body;
@@ -151,6 +157,17 @@ export class AppController {
     };
   }
 
+  @Public()
+  @Get('auth/verify-key')
+  async verifyKey(@Headers('authorization') authorization?: string) {
+    const key = extractBearerToken(authorization);
+    if (!key) return { valid: false, reason: 'no key provided' };
+    const projectId = await this.apiKeysService.resolve(key);
+    if (!projectId) return { valid: false, reason: 'key not found or revoked' };
+    return { valid: true, projectId };
+  }
+
+  @Public()
   @Post('auth/register')
   async register(
     @Body() body: { email: string; password: string; name?: string },
@@ -163,13 +180,22 @@ export class AppController {
     if (password.length < 8) {
       throw new HttpException('Password must be at least 8 characters', 400);
     }
+    if (!/[A-Z]/.test(password)) {
+      throw new HttpException('Password must contain an uppercase letter', 400);
+    }
+    if (!/[a-z]/.test(password)) {
+      throw new HttpException('Password must contain a lowercase letter', 400);
+    }
+    if (!/[0-9]/.test(password)) {
+      throw new HttpException('Password must contain a number', 400);
+    }
 
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
-      throw new HttpException('An account with this email already exists', 409);
+      throw new HttpException('Registration failed. Please check your details and try again.', 409);
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const now = new Date();
 
     const user = await this.prisma.user.create({
@@ -214,6 +240,7 @@ export class AppController {
     };
   }
 
+  @Public()
   @Post('auth/login')
   async login(@Body() body: { email: string; password: string }) {
     const { email, password } = body;
@@ -242,6 +269,7 @@ export class AppController {
   }
 
   @Delete('auth/account')
+  @SkipThrottle()
   async deleteAccount(@Headers('authorization') authorization?: string) {
     const token = extractBearerToken(authorization);
     if (!token) {

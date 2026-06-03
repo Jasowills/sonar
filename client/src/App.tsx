@@ -3,20 +3,25 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { AppShell } from '@/components/app-shell'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
+import { EventProvider } from '@/lib/event-source'
+import { ToastProvider } from '@/lib/toast-store'
 import { AlertsPage } from '@/pages/alerts-page'
 import { AuthCallbackPage } from '@/pages/auth-callback-page'
-import { ConnectionsPage } from '@/pages/connections-page'
+import { DashboardPage } from '@/pages/dashboard-page'
+import { DeploymentsPage } from '@/pages/deployments-page'
 import { DocsPage } from '@/pages/docs-page'
+import { EnvironmentsPage } from '@/pages/environments-page'
+import { ErrorsPage } from '@/pages/errors-page'
 import { IncidentsPage } from '@/pages/incidents-page'
 import { LoginPage } from '@/pages/login-page'
 import { MonitorsPage } from '@/pages/monitors-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { PrivacyPage } from '@/pages/privacy-page'
-import { TermsPage } from '@/pages/terms-page'
-import { OverviewPage } from '@/pages/overview-page'
+import { ServicesPage } from '@/pages/services-page'
 import { SettingsPage } from '@/pages/settings-page'
 import { StatusPagesPage } from '@/pages/status-pages-page'
-import { TracesPage } from '@/pages/traces-page'
+import { TeamPage } from '@/pages/team-page'
+import { TermsPage } from '@/pages/terms-page'
 import { useTheme } from '@/hooks/use-theme'
 
 const LandingPage = lazy(() =>
@@ -25,19 +30,19 @@ const LandingPage = lazy(() =>
   })),
 )
 
-const pageMeta = {
-  '/app/overview': {
-    title: 'Overview',
+const pageMeta: Record<string, { title: string; eyebrow: string; description: string }> = {
+  '/app/dashboard': {
+    title: 'Dashboard',
     eyebrow: 'Workspace',
-    description: 'Uptime, monitors, and recent deploys at a glance.',
+    description: 'Uptime, monitors, and recent activity at a glance.',
   },
   '/app/monitors': {
     title: 'Monitors',
     eyebrow: 'Checks',
     description: 'HTTP checks grouped by service and environment.',
   },
-  '/app/traces': {
-    title: 'Traces',
+  '/app/errors': {
+    title: 'Errors',
     eyebrow: 'Errors',
     description: 'Grouped error events ingested from your services.',
   },
@@ -46,27 +51,42 @@ const pageMeta = {
     eyebrow: 'Response',
     description: 'Active and past incidents with timeline updates.',
   },
-  '/app/alerts': {
-    title: 'Alerts',
-    eyebrow: 'Routing',
+  '/app/deployments': {
+    title: 'Deployments',
+    eyebrow: 'Delivery',
+    description: 'Deployment timeline across your environments.',
+  },
+  '/app/integrations': {
+    title: 'Integrations',
+    eyebrow: 'Alerts',
     description: 'Delivery rules for Slack, email, and webhooks.',
+  },
+  '/app/services': {
+    title: 'Services',
+    eyebrow: 'Configuration',
+    description: 'Manage the services in your project.',
+  },
+  '/app/environments': {
+    title: 'Environments',
+    eyebrow: 'Configuration',
+    description: 'Manage environments and their keys.',
   },
   '/app/status-pages': {
     title: 'Status pages',
     eyebrow: 'External',
     description: 'Public status pages for your users.',
   },
-  '/app/connections': {
-    title: 'Connections',
-    eyebrow: 'SDK',
-    description: 'Services connected via the Watchdog SDK.',
+  '/app/team': {
+    title: 'Team',
+    eyebrow: 'Workspace',
+    description: 'Workspace members and roles.',
   },
   '/app/settings': {
     title: 'Settings',
     eyebrow: 'Config',
-    description: 'Workspace, projects, and integrations.',
+    description: 'Profile, workspace, API keys, and more.',
   },
-} as const
+}
 
 const PUBLIC_ROUTES = ['/', '/login', '/auth/callback', '/privacy', '/terms', '/docs']
 
@@ -81,7 +101,7 @@ function AppContent() {
 
   if (location.pathname === '/') {
     if (state.status === 'authenticated') {
-      return <Navigate to="/app/overview" replace />
+      return <Navigate to="/app/dashboard" replace />
     }
     return (
       <Suspense
@@ -118,7 +138,7 @@ function AppContent() {
     )
   }
 
-  const currentMeta = pageMeta[location.pathname as keyof typeof pageMeta] ?? {
+  const currentMeta = pageMeta[location.pathname] ?? {
     title: 'Watchdog',
     eyebrow: 'Workspace',
     description: '',
@@ -133,15 +153,25 @@ function AppContent() {
       onToggleTheme={toggleTheme}
     >
       <Routes>
-        <Route path="/app/overview" element={<OverviewPage />} />
+        <Route path="/app/dashboard" element={<DashboardPage />} />
         <Route path="/app/monitors" element={<MonitorsPage />} />
-        <Route path="/app/traces" element={<TracesPage />} />
+        <Route path="/app/errors" element={<ErrorsPage />} />
         <Route path="/app/incidents" element={<IncidentsPage />} />
-        <Route path="/app/alerts" element={<AlertsPage />} />
+        <Route path="/app/deployments" element={<DeploymentsPage />} />
+        <Route path="/app/integrations" element={<AlertsPage />} />
+        <Route path="/app/services" element={<ServicesPage />} />
+        <Route path="/app/environments" element={<EnvironmentsPage />} />
         <Route path="/app/status-pages" element={<StatusPagesPage />} />
-        <Route path="/app/connections" element={<ConnectionsPage />} />
+        <Route path="/app/team" element={<TeamPage />} />
         <Route path="/app/settings" element={<SettingsPage />} />
-        <Route path="/app" element={<Navigate replace to="/app/overview" />} />
+
+        {/* Redirect old paths */}
+        <Route path="/app/overview" element={<Navigate replace to="/app/dashboard" />} />
+        <Route path="/app/traces" element={<Navigate replace to="/app/errors" />} />
+        <Route path="/app/connections" element={<Navigate replace to="/app/services" />} />
+        <Route path="/app/alerts" element={<Navigate replace to="/app/integrations" />} />
+
+        <Route path="/app" element={<Navigate replace to="/app/dashboard" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppShell>
@@ -151,7 +181,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <EventProvider>
+          <AppContent />
+        </EventProvider>
+      </ToastProvider>
     </AuthProvider>
   )
 }

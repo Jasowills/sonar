@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { sanitizeError } from '@/lib/utils'
 import { useAuth, setToken } from '@/hooks/use-auth'
 import { MarketingLayout } from '@/components/marketing-layout'
 
@@ -79,7 +80,7 @@ function AuthCard({
       setToken(data.token)
       window.location.href = '/app/overview'
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(sanitizeError(err))
     } finally {
       setSubmitting(false)
     }

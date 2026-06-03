@@ -24,7 +24,7 @@ export function issueToken(user: AuthenticatedUser): string {
       picture: user.picture,
     },
     getSecret(),
-    { expiresIn: '7d' },
+    { expiresIn: '24h' },
   );
 }
 

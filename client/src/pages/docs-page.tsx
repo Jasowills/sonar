@@ -314,28 +314,24 @@ wd.record_deployment(version: 'v1.2.3', status: 'succeeded')`,
   },
   api: {
     title: 'API reference',
-    body: 'Watchdog exposes REST endpoints for high-throughput error and deployment ingestion, and a GraphQL endpoint for dashboard queries. All API calls require authentication via Bearer token.',
+    body: 'Watchdog exposes REST endpoints for high-throughput error and deployment ingestion, and a GraphQL endpoint for dashboard queries. Ingest endpoints require an API key (Bearer token). GraphQL queries require a JWT (issued at login).',
   },
   'api-error-ingestion': {
     title: 'Error ingestion',
     body: 'Send errors to Watchdog via the REST API. Each error is identified by a fingerprint — a stable identifier that groups similar errors together. When an error with the same fingerprint is sent repeatedly, Watchdog increments the occurrence count and updates the last-seen timestamp.',
     code: `POST /ingest/errors
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: Bearer <api-key>
 
 {
   "fingerprint": "TypeError: Cannot read properties of undefined",
-  "title": "TypeError in checkout handler",
-  "projectId": "proj_xxx",
-  "environmentId": "env_xxx",
+  "message": "TypeError in checkout handler",
+  "projectKey": "proj_xxx",
+  "environmentKey": "env_xxx",
   "serviceId": "svc_xxx",
   "stack": "TypeError: Cannot read properties of undefined\\n    at processOrder (/app/checkout.js:42:10)\\n    at async Server.handle (/app/server.js:18:5)",
   "release": "v1.2.3",
-  "metadata": {
-    "path": "/checkout",
-    "method": "POST",
-    "userId": "usr_xxx"
-  }
+  "metadata": "{\\"path\\":\\"/checkout\\",\\"method\\":\\"POST\\"}"
 }`,
     sections: [
       {
@@ -353,10 +349,11 @@ Authorization: Bearer <token>
     body: 'Track releases alongside your incidents and metrics. Each deployment records a version, status, and optional description. Deployments appear on the incident timeline and are correlated with monitor state changes.',
     code: `POST /ingest/deployments
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: Bearer <api-key>
 
 {
-  "environmentId": "env_xxx",
+  "projectKey": "proj_xxx",
+  "environmentKey": "env_xxx",
   "serviceId": "svc_xxx",
   "version": "v1.2.3",
   "status": "SUCCEEDED",
@@ -448,7 +445,7 @@ query Deployments($projectSlug: String, $limit: Int) {
     sections: [
       {
         heading: 'Authentication',
-        text: 'Pass your JWT token as a Bearer token in the Authorization header. Tokens are issued by POST /auth/login or POST /auth/google and expire after 7 days.',
+        text: 'Pass your JWT token as a Bearer token in the Authorization header. Tokens are issued by POST /auth/login or POST /auth/google and expire after 24 hours. Ingest endpoints (POST /ingest/*) use API keys instead — create one from the Dashboard → Settings → API Keys.',
       },
       {
         heading: 'Pagination',
@@ -707,36 +704,37 @@ async def track_deploy():
   'examples-cli-tools': {
     title: 'CLI tools',
     body: 'Use curl or any HTTP client to interact with Watchdog APIs directly. Perfect for CI/CD pipelines, monitoring scripts, and quick testing.',
-    code: `# Authenticate and get a token
+    code: `# Authenticate and get a JWT (for GraphQL queries)
 TOKEN=$(curl -s -X POST https://api.watchdog.dev/auth/login \\
   -H "Content-Type: application/json" \\
   -d '{"email": "user@example.com", "password": "your-password"}' \\
   | jq -r '.token')
 
-# List monitors
+# List monitors (GraphQL — uses JWT)
 curl -s https://api.watchdog.dev/graphql \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "{ monitors { id name targetUrl latestState } }"}' \\
   | jq '.data.monitors'
 
-# Ingest an error
+# Ingest an error (REST — uses API key from Dashboard → Settings → API Keys)
 curl -s -X POST https://api.watchdog.dev/ingest/errors \\
-  -H "Authorization: Bearer $TOKEN" \\
+  -H "Authorization: Bearer wdp_xxxx_yyyy" \\
   -H "Content-Type: application/json" \\
   -d '{
     "fingerprint": "CLITest",
-    "title": "Manual test error",
-    "projectId": "proj_xxx",
-    "environmentId": "env_xxx"
+    "message": "Manual test error",
+    "projectKey": "proj_xxx",
+    "environmentKey": "env_xxx"
   }'
 
-# Record a deployment
+# Record a deployment (REST — uses API key)
 curl -s -X POST https://api.watchdog.dev/ingest/deployments \\
-  -H "Authorization: Bearer $TOKEN" \\
+  -H "Authorization: Bearer wdp_xxxx_yyyy" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "environmentId": "env_xxx",
+    "projectKey": "proj_xxx",
+    "environmentKey": "env_xxx",
     "version": "v1.0.0",
     "status": "SUCCEEDED",
     "deployedBy": "curl"

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsService } from '../events/events.service';
+import { EmailService } from '../email/email.service';
 
 type NotificationRecord = {
   id: string;
@@ -16,7 +18,11 @@ type NotificationRecord = {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventsService,
+    private readonly email: EmailService,
+  ) {}
 
   async findAll(
     userId: string,
@@ -78,7 +84,7 @@ export class NotificationsService {
     workspaceId: string;
   }): Promise<NotificationRecord> {
     const now = new Date();
-    return this.prisma.notification.create({
+    const record = await this.prisma.notification.create({
       data: {
         type: data.type,
         title: data.title,
@@ -90,5 +96,34 @@ export class NotificationsService {
         updatedAt: now,
       },
     });
+
+    // Push real-time via SSE
+    this.events.emit({
+      type: 'notification',
+      data: {
+        id: record.id,
+        type: record.type,
+        title: record.title,
+        body: record.body,
+        link: record.link,
+        createdAt: record.createdAt.toISOString(),
+      },
+      userId: data.userId,
+      workspaceId: data.workspaceId,
+    });
+
+    // Send email if notification is relevant (monitor_down, incident_created, alert_fired)
+    if (['monitor_down', 'incident_created', 'alert_fired'].includes(data.type)) {
+      const user = await this.prisma.user.findUnique({ where: { id: data.userId } });
+      if (user?.email) {
+        await this.email.send(
+          user.email,
+          `[Watchdog] ${data.title}`,
+          `<p>${data.body ?? data.title}</p><p><a href="${process.env.CLIENT_URL ?? 'http://localhost:3000'}${data.link ?? ''}">View in Watchdog</a></p>`,
+        );
+      }
+    }
+
+    return record;
   }
 }

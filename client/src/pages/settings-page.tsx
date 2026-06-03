@@ -10,11 +10,11 @@ import {
   Link,
   Pencil,
   Plus,
-  Terminal,
   Trash2,
   User,
   X,
 } from 'lucide-react'
+import { sanitizeError } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { getToken } from '@/hooks/use-auth'
 import {
@@ -23,9 +23,6 @@ import {
   useApiKeys,
   useCreateApiKey,
   useRevokeApiKey,
-  useEnvironments,
-  useUpdateEnvironment,
-  useDeleteEnvironment,
 } from '@/lib/api'
 import { useSelectedProject } from '@/hooks/use-selected-project'
 
@@ -317,137 +314,7 @@ function ApiKeysSection() {
   )
 }
 
-function EnvironmentsSection() {
-  const { project } = useSelectedProject()
-  const { data: environments, isLoading } = useEnvironments(project?.slug)
-  const { mutateAsync: updateEnv } = useUpdateEnvironment()
-  const { mutateAsync: deleteEnv } = useDeleteEnvironment()
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-  const [copiedKey, setCopiedKey] = useState<string | null>(null)
-
-  const handleCopy = (key: string) => {
-    void navigator.clipboard.writeText(key)
-    setCopiedKey(key)
-    setTimeout(() => setCopiedKey(null), 2000)
-  }
-
-  const handleSave = async (id: string) => {
-    if (!editName.trim()) return
-    await updateEnv({ id, name: editName.trim() })
-    setEditingId(null)
-  }
-
-  if (!project) return null
-
-  return (
-    <Section title="Environments" description="Manage environments and their keys for this project" icon={Terminal}>
-      {isLoading ? (
-        <p className="text-xs text-[var(--text-muted)]">Loading environments…</p>
-      ) : environments && environments.length > 0 ? (
-        <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
-          {environments.map((env) => (
-            <div key={env.id} className="px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="block h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: env.color ?? 'var(--text-muted)' }}
-                  />
-                  <div className="min-w-0">
-                    {editingId === env.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="w-40 border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-[var(--border-strong)]"
-                        />
-                        <button
-                          onClick={() => handleSave(env.id)}
-                          className="flex items-center gap-1 border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
-                        >
-                          <Check className="h-3 w-3" />
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="flex items-center gap-1 border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                        >
-                          <X className="h-3 w-3" />
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-[var(--text-main)]">{env.name}</p>
-                        <span className="text-[10px] font-mono text-[var(--text-soft)]">{env.key}</span>
-                        <button
-                          onClick={() => handleCopy(env.key)}
-                          className="flex items-center gap-1 border border-[var(--border-soft)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                        >
-                          <Copy className="h-2.5 w-2.5" />
-                          {copiedKey === env.key ? 'Copied' : 'Key'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {editingId !== env.id && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setEditingId(env.id)
-                          setEditName(env.name)
-                        }}
-                        className="flex items-center gap-1 border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                      >
-                        <Pencil className="h-2.5 w-2.5" />
-                        Edit
-                      </button>
-                      {confirmDelete === env.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={async () => {
-                              await deleteEnv(env.id)
-                              setConfirmDelete(null)
-                            }}
-                            className="flex items-center gap-1 border border-[var(--dot-down)] px-2 py-1 text-[10px] text-[var(--dot-down)] hover:bg-[var(--surface-panel-soft)]"
-                          >
-                            <Trash2 className="h-2.5 w-2.5" />
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete(null)}
-                            className="border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDelete(env.id)}
-                          className="flex items-center gap-1 border border-[var(--border-soft)] px-2 py-1 text-[10px] text-[var(--dot-down)] hover:bg-[var(--surface-panel-soft)]"
-                        >
-                          <Trash2 className="h-2.5 w-2.5" />
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs text-[var(--text-soft)]">No environments in this project.</p>
-      )}
-    </Section>
-  )
-}
+function DangerSection() {
   const { signOut } = useAuth()
   const [confirm, setConfirm] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -463,7 +330,10 @@ function EnvironmentsSection() {
 
     try {
       const token = getToken()
-      const res = await fetch('http://localhost:8080/auth/account', {
+      const serverOrigin = new URL(
+        import.meta.env.VITE_API_URL ?? 'http://localhost:8080/graphql',
+      ).origin
+      const res = await fetch(`${serverOrigin}/auth/account`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -478,7 +348,7 @@ function EnvironmentsSection() {
       setDone(true)
       setTimeout(() => signOut(), 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(sanitizeError(err))
     } finally {
       setDeleting(false)
     }
@@ -548,7 +418,6 @@ export function SettingsPage() {
       <ProfileSection />
       <WorkspaceSection />
       <ApiKeysSection />
-      <EnvironmentsSection />
       <IntegrationsSection />
       <DangerSection />
     </div>

@@ -1,3 +1,4 @@
+import { UnauthorizedException } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { AuthenticatedUser } from '../auth/jwt';
@@ -9,6 +10,11 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsResolver {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  private requireUser(user: AuthenticatedUser | null): AuthenticatedUser {
+    if (!user) throw new UnauthorizedException();
+    return user;
+  }
+
   @Query(() => [NotificationModel])
   notifications(
     @CurrentUser() user: AuthenticatedUser | null,
@@ -16,22 +22,24 @@ export class NotificationsResolver {
     workspaceId?: string,
     @Args('limit', { type: () => Int, nullable: true }) limit?: number,
   ): Promise<NotificationModel[]> {
-    if (!user) return Promise.resolve([]);
-    return this.notificationsService.findAll(user.sub, workspaceId, limit);
+    const authed = this.requireUser(user);
+    return this.notificationsService.findAll(authed.sub, workspaceId, limit);
   }
 
   @Query(() => Int)
   unreadNotificationCount(
     @CurrentUser() user: AuthenticatedUser | null,
   ): Promise<number> {
-    if (!user) return Promise.resolve(0);
-    return this.notificationsService.unreadCount(user.sub);
+    const authed = this.requireUser(user);
+    return this.notificationsService.unreadCount(authed.sub);
   }
 
   @Mutation(() => Boolean)
   markNotificationRead(
+    @CurrentUser() user: AuthenticatedUser | null,
     @Args('id') id: string,
   ): Promise<boolean> {
+    this.requireUser(user);
     return this.notificationsService.markRead(id);
   }
 
@@ -39,7 +47,7 @@ export class NotificationsResolver {
   markAllNotificationsRead(
     @CurrentUser() user: AuthenticatedUser | null,
   ): Promise<boolean> {
-    if (!user) return Promise.resolve(false);
-    return this.notificationsService.markAllRead(user.sub);
+    const authed = this.requireUser(user);
+    return this.notificationsService.markAllRead(authed.sub);
   }
 }

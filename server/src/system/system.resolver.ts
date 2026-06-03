@@ -1,9 +1,11 @@
 import { Query, Resolver } from '@nestjs/graphql';
 
+import { Public } from '../auth/public.decorator';
 import { PlatformOverview } from './models/platform-overview.model';
 
 @Resolver(() => PlatformOverview)
 export class SystemResolver {
+  @Public()
   @Query(() => PlatformOverview)
   platformOverview(): PlatformOverview {
     return {

@@ -60,18 +60,24 @@ export function Modal({
 
 type FieldProps = {
   label: string
-  error?: string
+  errors?: string[]
   children: ReactNode
 }
 
-export function Field({ label, error, children }: FieldProps) {
+export function Field({ label, errors, children }: FieldProps) {
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
         {label}
       </label>
       {children}
-      {error && <p className="mt-1 text-xs text-[var(--dot-down)]">{error}</p>}
+      {errors && errors.length > 0 && (
+        <div className="mt-1 space-y-0.5">
+          {errors.map((msg, i) => (
+            <p key={i} className="text-xs text-[var(--dot-down)]">{msg}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -9,10 +9,11 @@ const META: Record<MonitorState, MonitorStateMeta> = {
   HEALTHY: { label: 'Healthy', dotClass: 'bg-[var(--dot-healthy)]' },
   DEGRADED: { label: 'Degraded', dotClass: 'bg-[var(--dot-degraded)]' },
   DOWN: { label: 'Down', dotClass: 'bg-[var(--dot-down)]' },
+  PENDING: { label: 'Pending', dotClass: 'bg-[var(--text-soft)]' },
 }
 
 export function monitorStateMeta(state: MonitorState | string): MonitorStateMeta {
-  return META[state as MonitorState] ?? META.HEALTHY
+  return META[state as MonitorState] ?? { label: state, dotClass: 'bg-[var(--text-soft)]' }
 }
 
 export function formatInterval(seconds: number): string {

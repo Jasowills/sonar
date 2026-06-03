@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Modal, Field } from './modal'
 import { useCreateEnvironment } from '@/lib/api'
+import { parseGraphqlError } from '@/lib/utils'
 
 type Props = {
   open: boolean
@@ -35,7 +36,7 @@ export function CreateEnvironmentModal({ open, onClose, projectId }: Props) {
       submitting={isPending}
       onSubmit={handleSubmit}
     >
-      <Field label="Name" error={error?.message}>
+      <Field label="Name" errors={parseGraphqlError(error)}>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}

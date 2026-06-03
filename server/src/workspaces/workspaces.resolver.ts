@@ -29,4 +29,9 @@ export class WorkspacesResolver {
   ): Promise<WorkspaceModel> {
     return this.workspacesService.update(input);
   }
+
+  @Mutation(() => Boolean)
+  deleteWorkspace(@Args('id') id: string): Promise<boolean> {
+    return this.workspacesService.remove(id);
+  }
 }

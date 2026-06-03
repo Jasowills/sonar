@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>my-awesome-api · testing-hub</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #c0c0c0; padding: 32px; }
+  a { color: inherit; }
+  .svc { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+  .svc-dot { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; }
+  .svc-name { font-size: 18px; font-weight: 600; color: #eee; }
+  .svc-tag { font-size: 10px; color: #666; border: 1px solid #222; padding: 1px 6px; }
+  .svc-bar { display: flex; align-items: center; gap: 16px; font-size: 11px; color: #555; margin-bottom: 28px; }
+  .svc-bar span { display: flex; align-items: center; gap: 4px; }
+  .status-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .status-item { border: 1px solid #1a1a1a; padding: 12px 16px; min-width: 140px; }
+  .status-item .val { font-size: 22px; font-weight: 600; color: #eee; }
+  .status-item .lbl { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+  h2 { font-size: 11px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; margin-top: 32px; }
+  .desc { font-size: 12px; color: #555; margin-bottom: 14px; }
+  .card { border: 1px solid #1a1a1a; padding: 14px 16px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .card-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .card-method { font-size: 10px; font-weight: 600; padding: 1px 5px; font-family: monospace; }
+  .card-method.get { color: #4ade80; border: 1px solid #1a3a1a; }
+  .card-method.post { color: #60a5fa; border: 1px solid #1a2a3a; }
+  .card-path { font-family: monospace; font-size: 12px; color: #888; }
+  .card-desc { font-size: 11px; color: #444; margin-top: 1px; }
+  .card-url { font-family: monospace; font-size: 10px; color: #333; }
+  .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  button { background: transparent; border: 1px solid #222; color: #aaa; padding: 4px 12px; font-size: 11px; cursor: pointer; font-family: inherit; }
+  button:hover { border-color: #444; color: #ddd; }
+  button:disabled { opacity: 0.25; cursor: default; }
+  button.sm { padding: 2px 8px; font-size: 10px; }
+  button.green { border-color: #1a3a1a; color: #4ade80; }
+  button.green:hover { border-color: #2a5a2a; }
+  .result { font-size: 10px; font-family: monospace; color: #444; white-space: pre-wrap; margin-top: 6px; padding: 6px 0; }
+  .result.ok { color: #4ade80; }
+  .result.err { color: #f87171; }
+  .sdk-banner { border: 1px solid #1a1a1a; padding: 14px 16px; margin-top: 32px; font-size: 11px; color: #555; line-height: 1.8; }
+  .sdk-banner strong { color: #888; }
+  .sdk-banner code { color: #60a5fa; font-family: monospace; font-size: 10px; }
+  .sdk-banner .key { color: #888; }
+  .sdk-banner .val { color: #666; }
+  .bad { color: #f87171; border-color: #3a1a1a; }
+  .bad .svc-dot { background: #f87171; }
+</style>
+</head>
+<body>
+<div id="banner"></div>
+
+<script>
+var SDK = { projectKey: '--', environmentKey: '--', apiKey: '--', endpoint: 'http://localhost:8080', ok: false, message: '' }
+
+function init() {
+  fetch('/api/health').then(function(r) {
+    var apiOk = r.ok
+    fetch('/api/sdk-status').then(function(r2) {
+      return r2.json()
+    }).then(function(sdk) {
+      SDK.ok = sdk.ok
+      SDK.message = sdk.message
+      render(apiOk)
+    }).catch(function() {
+      render(false)
+    })
+  }).catch(function() {
+    render(false)
+  })
+}
+
+function card(method, path, desc, url, id, isMonitor, extraClass) {
+  var btnLabel = isMonitor ? 'Test' : 'Send'
+  var btn
+  if (isMonitor) {
+    btn = '<button class="sm" onclick="fetch(\'' + path + '\').then(function(r){return r.json()}).then(function(d){showResult(\'r-' + id + '\',d)}).catch(function(e){showResult(\'r-' + id + '\',e,true)})">' + btnLabel + '</button>'
+  } else {
+    btn = '<button class="sm ' + (extraClass || '') + '" onclick="sendTrigger(this,\'' + path + '\',\'r-' + id + '\')">' + btnLabel + '</button>'
+  }
+  return '<div class="card">' +
+    '<div class="card-left">' +
+    '<span class="card-method ' + method.toLowerCase() + '">' + method + '</span>' +
+    '<div>' +
+    '<div class="card-path">' + path + '</div>' +
+    '<div class="card-desc">' + desc + '</div>' +
+    (url ? '<div class="card-url">' + url + '</div>' : '') +
+    '<div class="result" id="r-' + id + '"></div>' +
+    '</div></div>' +
+    '<div class="card-actions">' + btn + '</div></div>'
+}
+
+function showResult(id, data, isErr) {
+  var el = document.getElementById(id)
+  if (!el) return
+  el.className = 'result ' + (isErr ? 'err' : 'ok')
+  var text = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+  el.textContent = text.length > 400 ? text.slice(0, 400) + '...' : text
+  if (!isErr) setTimeout(function() { el.textContent = ''; el.className = 'result' }, 5000)
+}
+
+function sendTrigger(btn, url, resultId) {
+  btn.disabled = true
+  showResult(resultId, 'sending...')
+  fetch(url, { method: 'POST' }).then(function(r) {
+    return r.json()
+  }).then(function(d) {
+    showResult(resultId, d)
+    btn.disabled = false
+  }).catch(function(e) {
+    showResult(resultId, String(e), true)
+    btn.disabled = false
+  })
+}
+
+function render(ok) {
+  var sdkClass = SDK.ok ? 'SDK ok' : 'SDK misconfigured'
+  var sdkColor = SDK.ok ? '#4ade80' : '#f87171'
+
+  var html = ''
+  html += '<div class="svc"><span class="svc-dot"></span><span class="svc-name">my-awesome-api</span><span class="svc-tag">testing-hub</span></div>'
+  html += '<div class="svc-bar">'
+  html += '<span>port 3001</span>'
+  html += '<span id="status" style="color:' + (ok ? '#4ade80' : '#f87171') + '">' + (ok ? 'connected' : 'offline') + '</span>'
+  html += '<span id="sdk-status" style="color:' + sdkColor + '">' + sdkClass + '</span>'
+  html += '</div>'
+
+  html += '<div class="status-row">'
+  html += '<div class="status-item"><div class="val" id="val-uptime">-</div><div class="lbl">uptime</div></div>'
+  html += '<div class="status-item"><div class="val" id="val-version">-</div><div class="lbl">version</div></div>'
+  html += '<div class="status-item"><div class="val" id="val-env">-</div><div class="lbl">environment</div></div>'
+  html += '</div>'
+
+  html += '<h2>Monitor Endpoints</h2>'
+  html += '<p class="desc">Create watchdog monitors pointing at these URLs to track uptime, latency, and error rates.</p>'
+  html += card('GET', '/api/health', 'Always returns 200. Baseline healthy endpoint.', 'http://localhost:3001/api/health', 'health', true)
+  html += card('GET', '/api/slow', 'Responds after 1-4s. Tests latency tracking.', 'http://localhost:3001/api/slow', 'slow', true)
+  html += card('GET', '/api/flaky', '200 ~60% / 500 ~40%. Tests state transitions.', 'http://localhost:3001/api/flaky', 'flaky', true)
+  html += card('GET', '/api/error', 'Always 500. Tests down monitor state.', 'http://localhost:3001/api/error', 'error', true)
+  html += card('GET', '/api/version', 'Service metadata (version, node, uptime).', 'http://localhost:3001/api/version', 'version', true)
+
+  html += '<h2>SDK Triggers</h2>'
+  html += '<p class="desc">Fire events through the watchdog SDK - they show up on your dashboards in real time.</p>'
+  html += card('POST', '/trigger/error', 'Captures a single error via SDK.', '', 'trigger-error')
+  html += card('POST', '/trigger/errors/batch', 'Captures 3 errors with different fingerprints.', '', 'trigger-batch')
+  html += card('POST', '/trigger/errors/with-stack', 'Throws from a deeply nested function call.', '', 'trigger-stack')
+  html += card('POST', '/trigger/deploy', 'Records a successful deployment.', '', 'trigger-deploy', false, 'green')
+  html += card('POST', '/trigger/deploy/fail', 'Records a failed deployment.', '', 'trigger-deploy-fail', false, 'green')
+
+  html += '<h2>SDK Configuration</h2>'
+  html += '<div class="sdk-banner">'
+  html += '<strong>@watchdog/sdk</strong> is configured via environment variables in <code>.env</code>:<br><br>'
+  html += '<span class="key">WATCHDOG_ENDPOINT</span> <span class="val">' + SDK.endpoint + '</span><br>'
+  html += '<span class="key">WATCHDOG_PROJECT_KEY</span> <span class="val">' + SDK.projectKey + '</span><br>'
+  html += '<span class="key">WATCHDOG_ENVIRONMENT_KEY</span> <span class="val">' + SDK.environmentKey + '</span><br>'
+  html += '<span class="key">WATCHDOG_API_KEY</span> <span class="val">' + SDK.apiKey + '</span><br><br>'
+  if (SDK.ok) {
+    html += '<span style="color:#4ade80">SDK is configured and ready</span>'
+  } else {
+    html += '<span style="color:#f87171">' + SDK.message + '</span>'
+  }
+  html += '</div>'
+
+  document.getElementById('banner').innerHTML = html
+
+  fetch('/api/health').then(function(r) { return r.json() }).then(function(d) {
+    var el = document.getElementById('val-uptime')
+    if (el) el.textContent = d.uptime ? Math.floor(d.uptime / 1000) + 's' : '-'
+  }).catch(function() {})
+  fetch('/api/version').then(function(r) { return r.json() }).then(function(d) {
+    var el = document.getElementById('val-version')
+    if (el) el.textContent = d.version || '-'
+    SDK.projectKey = d.projectKey || SDK.projectKey
+    SDK.environmentKey = d.environmentKey || SDK.environmentKey
+  }).catch(function() {})
+}
+
+fetch('/api/version').then(function(r) { return r.json() }).then(function(d) {
+  SDK.projectKey = d.projectKey || SDK.projectKey
+}).catch(function() {})
+init()
+</script>
+</body>
+</html>

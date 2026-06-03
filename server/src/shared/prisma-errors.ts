@@ -36,5 +36,7 @@ export function mapPrismaError(error: unknown): never {
     );
   }
 
-  throw error;
+  throw new InternalServerErrorException(
+    'An unexpected database error occurred. Please try again.',
+  );
 }

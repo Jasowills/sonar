@@ -1,6 +1,6 @@
 import type { WatchdogOptions, CaptureErrorPayload, RecordDeploymentOptions, IngestResponse } from './types'
 
-const DEFAULT_ENDPOINT = 'https://api.watchdog.dev'
+const DEFAULT_ENDPOINT = 'http://localhost:8080'
 
 export class WatchdogClient {
   private projectKey: string
@@ -55,7 +55,10 @@ export class WatchdogClient {
     })
     if (!res.ok) {
       const body = await res.json().catch(() => null)
-      throw new Error(body?.message ?? `Failed to ingest error (${res.status})`)
+      const hint = res.status === 401
+        ? ' — check that WATCHDOG_API_KEY is set and valid'
+        : ''
+      throw new Error(body?.message ?? `Failed to ingest error (${res.status})${hint}`)
     }
     return res.json() as Promise<IngestResponse>
   }
@@ -76,7 +79,10 @@ export class WatchdogClient {
     })
     if (!res.ok) {
       const body = await res.json().catch(() => null)
-      throw new Error(body?.message ?? `Failed to record deployment (${res.status})`)
+      const hint = res.status === 401
+        ? ' — check that WATCHDOG_API_KEY is set and valid'
+        : ''
+      throw new Error(body?.message ?? `Failed to record deployment (${res.status})${hint}`)
     }
     return res.json() as Promise<IngestResponse>
   }

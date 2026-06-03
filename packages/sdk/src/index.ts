@@ -38,8 +38,9 @@ export class Watchdog {
       metadata: options?.metadata,
     }
 
-    this.client.ingestError(payload).catch((err) => {
-      console.error('[Watchdog] Failed to capture error:', err)
+    this.client.ingestError(payload).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[Watchdog] ${msg}`)
     })
   }
 

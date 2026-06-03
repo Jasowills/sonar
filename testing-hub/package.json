@@ -1,0 +1,20 @@
+{
+  "name": "@watchdog/testing-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@watchdog/sdk": "file:../packages/sdk",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^25.9.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.5.0"
+  }
+}

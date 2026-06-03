@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -689,7 +690,10 @@ export function LandingPage() {
       ref={rootRef}
       className="dark relative min-h-dvh overflow-clip bg-[var(--surface-page)] font-[var(--font-sans)] text-[var(--text-main)] antialiased"
     >
-      <div className="landing-grain" aria-hidden />
+      {createPortal(
+        <div className="landing-grain" aria-hidden />,
+        document.body,
+      )}
       <Nav onNavigate={navigateTo} />
       <main>
         <Hero onNavigate={navigateTo} />
