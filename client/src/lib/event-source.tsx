@@ -10,9 +10,14 @@ export type SseNotification = {
   createdAt: string
 }
 
+export type SseErrorCreated = {
+  errorGroupId: string
+  title: string
+}
+
 export type SseEvent = {
-  type: 'notification'
-  data: SseNotification
+  type: 'notification' | 'error_created'
+  data: SseNotification | SseErrorCreated
 }
 
 type EventContextValue = {
@@ -32,29 +37,39 @@ export function EventProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = getToken()
-    if (!token) return
+    if (!token) {
+      console.debug('[SSE] no token, skipping connection')
+      return
+    }
 
     const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
     const url = `${base}/events/stream?token=${encodeURIComponent(token)}`
+    console.debug('[SSE] connecting to', url.replace(/token=.*$/, 'token=…'))
     const es = new EventSource(url)
     esRef.current = es
 
-    es.onopen = () => setConnected(true)
+    es.onopen = () => {
+      console.log('[SSE] connected')
+      setConnected(true)
+    }
 
     es.onmessage = (event) => {
       try {
         const parsed: SseEvent = JSON.parse(event.data)
+        console.log(`[SSE] received type=${parsed.type}`, parsed.data)
         setLastEvent(parsed)
       } catch {
-        // ignore parse errors
+        console.debug('[SSE] parse error:', event.data)
       }
     }
 
     es.onerror = () => {
+      console.debug('[SSE] connection error (browser will auto-reconnect)')
       setConnected(false)
     }
 
     return () => {
+      console.debug('[SSE] closing connection')
       es.close()
       esRef.current = null
       setConnected(false)

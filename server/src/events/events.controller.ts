@@ -17,9 +17,11 @@ export class EventsController {
       extractBearerToken(req.headers.authorization) ||
       (req.query.token as string);
     const user = token ? verifyToken(token) : null;
+    console.log(`[SSE] stream connected userId=${user?.sub ?? '-'}`);
 
     return this.eventsService.subscribe(user?.sub).pipe(
       map((event: SseEvent) => {
+        console.debug(`[SSE] send type=${event.type} userId=${event.userId ?? '-'}`);
         const data = JSON.stringify(event);
         return new MessageEvent('message', { data });
       }),

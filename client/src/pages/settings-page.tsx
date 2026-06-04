@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import { sanitizeError } from '@/lib/utils'
+import { Spinner } from '@/components/spinner'
 import { useAuth } from '@/hooks/use-auth'
 import { getToken } from '@/hooks/use-auth'
 import {
@@ -134,8 +135,8 @@ function WorkspaceSection() {
               disabled={updating || !name.trim()}
               className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-1.5 text-xs font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)] disabled:opacity-40"
             >
-              <Check className="h-3 w-3" />
-              {updating ? 'Saving…' : 'Save'}
+              {updating ? <Spinner /> : <Check className="h-3 w-3" />}
+              {updating ? 'Saving\u2026' : 'Save'}
             </button>
             <button
               type="button"
@@ -244,7 +245,8 @@ function ApiKeysSection() {
             className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-2 text-xs font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)] disabled:opacity-40"
           >
             <Plus className="h-3 w-3" />
-            {creating ? 'Generating…' : 'Generate'}
+            {creating && <Spinner />}
+            {creating ? 'Generating\u2026' : 'Generate'}
           </button>
         </form>
 
@@ -404,7 +406,8 @@ function DangerSection() {
             disabled={confirm !== 'DELETE' || deleting}
             className="flex items-center gap-2 border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {deleting ? 'Deleting…' : 'Delete my account'}
+            {deleting && <Spinner />}
+            {deleting ? 'Deleting\u2026' : 'Delete my account'}
           </button>
         </form>
       </div>

@@ -1,5 +1,6 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { Request } from 'express';
 
 import { ApiKeyGuard } from '../auth/api-key.guard';
 import { ErrorGroupModel } from './models/error-group.model';
@@ -13,7 +14,7 @@ import { ErrorsService } from './errors.service';
  *   curl -X POST http://localhost:8080/ingest/errors \
  *     -H 'authorization: Bearer <api-key>' \
  *     -H 'content-type: application/json' \
- *     -d '{"fingerprint":"checkout:TypeError:cart","message":"Cannot read properties of undefined","environmentId":"env_production","projectId":"project_core-platform"}'
+ *     -d '{"fingerprint":"checkout:TypeError:cart","message":"Cannot read properties of undefined","environmentKey":"production"}'
  */
 @Controller('ingest/errors')
 export class ErrorsController {
@@ -22,7 +23,10 @@ export class ErrorsController {
   @SkipThrottle()
   @UseGuards(ApiKeyGuard)
   @Post()
-  record(@Body() input: RecordErrorInput): Promise<ErrorGroupModel> {
-    return this.errorsService.record(input);
+  record(
+    @Body() input: RecordErrorInput,
+    @Req() req: Request,
+  ): Promise<ErrorGroupModel> {
+    return this.errorsService.record(input, req.projectId!);
   }
 }

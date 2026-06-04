@@ -1,5 +1,6 @@
 import { type FormEvent, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { Spinner } from '@/components/spinner'
 
 type ModalProps = {
   open: boolean
@@ -47,9 +48,10 @@ export function Modal({
             <button
               type="submit"
               disabled={submitting}
-              className="bg-[var(--text-main)] px-4 py-2 text-sm text-[var(--surface-page)] hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-[var(--text-main)] px-4 py-2 text-sm text-[var(--surface-page)] hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? 'Saving…' : submitLabel}
+              {submitting && <Spinner />}
+              {submitting ? 'Saving\u2026' : submitLabel}
             </button>
           </div>
         </form>

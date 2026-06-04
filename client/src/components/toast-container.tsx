@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useToasts, type Toast } from '@/lib/toast-store'
-import { useEventSource, type SseNotification } from '@/lib/event-source'
+import { useEventSource, type SseNotification, type SseErrorCreated } from '@/lib/event-source'
 
 const SSE_TYPE_TOAST: Record<string, { type: Toast['type']; label: string }> = {
   monitor_down: { type: 'error', label: 'Monitor Down' },
@@ -11,6 +11,11 @@ const SSE_TYPE_TOAST: Record<string, { type: Toast['type']; label: string }> = {
   incident_resolved: { type: 'success', label: 'Incident Resolved' },
   deploy_completed: { type: 'success', label: 'Deploy Completed' },
   alert_fired: { type: 'warning', label: 'Alert Fired' },
+  error_created: { type: 'error', label: 'New Error' },
+}
+
+function isSseNotification(data: unknown): data is SseNotification {
+  return typeof data === 'object' && data !== null && 'id' in data && 'type' in data
 }
 
 function notificationToast(n: SseNotification): Omit<Toast, 'id'> | null {
@@ -21,6 +26,15 @@ function notificationToast(n: SseNotification): Omit<Toast, 'id'> | null {
     title: mapping.label,
     body: n.title,
     duration: 6000,
+  }
+}
+
+function errorCreatedToast(n: SseErrorCreated): Omit<Toast, 'id'> {
+  return {
+    type: 'error',
+    title: 'New Error',
+    body: n.title,
+    duration: 8000,
   }
 }
 
@@ -57,9 +71,15 @@ export function ToastContainer() {
   const { lastEvent } = useEventSource()
 
   useEffect(() => {
-    if (!lastEvent || lastEvent.type !== 'notification') return
-    const t = notificationToast(lastEvent.data)
-    if (t) addToast(t)
+    if (!lastEvent) return
+    if (lastEvent.type === 'notification' && isSseNotification(lastEvent.data)) {
+      const t = notificationToast(lastEvent.data)
+      if (t) addToast(t)
+    }
+    if (lastEvent.type === 'error_created') {
+      const t = errorCreatedToast(lastEvent.data as SseErrorCreated)
+      if (t) addToast(t)
+    }
   }, [lastEvent, addToast])
 
   if (toasts.length === 0) return null

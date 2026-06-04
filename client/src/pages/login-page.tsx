@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom'
 import { sanitizeError } from '@/lib/utils'
 import { useAuth, setToken } from '@/hooks/use-auth'
 import { MarketingLayout } from '@/components/marketing-layout'
+import { LogoMark } from '@/components/logo'
+import { Spinner } from '@/components/spinner'
 
 type Mode = 'signin' | 'register' | 'forgot'
 
@@ -27,11 +29,20 @@ export function LoginPage() {
   return (
     <MarketingLayout showGrain={false}>
       <div className="relative flex min-h-[calc(100dvh-4rem)] items-center justify-center px-5">
-        <div className="relative w-full max-w-sm">
-          <AuthCard
-            signInWithGoogle={signInWithGoogle}
-            serverOrigin={serverOrigin}
-          />
+        <div className="flex w-full max-w-3xl border border-[var(--border-soft)]">
+          {/* Branding panel */}
+          <div className="hidden w-72 flex-col items-center justify-center gap-4 border-r border-[var(--border-soft)] bg-[var(--surface-elevated)] px-8 py-14 sm:flex">
+            <LogoMark className="h-12 w-12" />
+            <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--text-main)]">Sonar</p>
+            <p className="text-center text-xs leading-5 text-[var(--text-muted)]">
+              Observability for small SaaS teams.
+            </p>
+          </div>
+
+          {/* Auth form panel */}
+          <div className="flex-1 bg-[var(--surface-page)] px-8 py-14">
+            <AuthCard signInWithGoogle={signInWithGoogle} serverOrigin={serverOrigin} />
+          </div>
         </div>
       </div>
     </MarketingLayout>
@@ -91,7 +102,6 @@ function AuthCard({
     setError('')
     setSubmitting(true)
 
-    // Simulate password reset — no email infra yet
     await new Promise((r) => setTimeout(r, 800))
     setForgotSent(true)
     setSubmitting(false)
@@ -99,10 +109,10 @@ function AuthCard({
 
   if (mode === 'forgot') {
     return (
-      <div className="border border-[var(--border-soft)] bg-[var(--surface-panel)] px-8 py-14">
+      <div>
         {forgotSent ? (
           <div className="text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--surface-elevated)]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center border border-[var(--border-soft)] bg-[var(--surface-elevated)]">
               <span className="text-lg text-[var(--text-main)]">&#10003;</span>
             </div>
             <h1 className="mt-5 text-lg font-semibold tracking-tight text-[var(--text-main)]">
@@ -134,10 +144,7 @@ function AuthCard({
 
             <div className="mt-6 space-y-4">
               <div>
-                <label
-                  htmlFor="forgot-email"
-                  className="text-xs font-medium text-[var(--text-muted)]"
-                >
+                <label htmlFor="forgot-email" className="text-xs font-medium text-[var(--text-muted)]">
                   Email
                 </label>
                 <input
@@ -151,24 +158,20 @@ function AuthCard({
               </div>
             </div>
 
-            {error && (
-              <p className="mt-3 text-xs text-[var(--text-muted)]">{error}</p>
-            )}
+            {error && <p className="mt-3 text-xs text-[var(--text-muted)]">{error}</p>}
 
             <button
               type="submit"
               disabled={submitting}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-none border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] disabled:opacity-50"
+              className="mt-5 flex w-full items-center justify-center gap-2 border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-colors hover:border-[var(--border-strong)] disabled:opacity-50"
             >
-              {submitting ? 'Sending…' : 'Send reset link'}
+              {submitting && <Spinner />}
+              {submitting ? 'Sending\u2026' : 'Send reset link'}
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                setMode('signin')
-                setError('')
-              }}
+              onClick={() => { setMode('signin'); setError('') }}
               className="mt-4 w-full text-center text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)]"
             >
               Back to sign in
@@ -180,29 +183,25 @@ function AuthCard({
   }
 
   return (
-    <div className="border border-[var(--border-soft)] bg-[var(--surface-panel)] px-8 py-14">
-      <div className="text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none border border-[var(--border-soft)] bg-[var(--surface-elevated)]">
-          <span className="text-lg font-bold text-[var(--text-main)]">W</span>
-        </div>
-        <h1 className="mt-5 text-xl font-semibold tracking-tight text-[var(--text-main)]">
-          {mode === 'register' ? 'Create an account' : 'Sign in to Sonar'}
-        </h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">
-          {mode === 'register'
-            ? 'Enter your details to get started.'
-            : 'Use your email or Google account.'}
-        </p>
+    <div>
+      {/* Mobile branding (shown on small screens where sidebar is hidden) */}
+      <div className="mb-6 flex flex-col items-center gap-2 sm:hidden">
+        <LogoMark className="h-10 w-10" />
+        <p className="text-base font-semibold text-[var(--text-main)]">Sonar</p>
       </div>
+
+      <h1 className="text-xl font-semibold tracking-tight text-[var(--text-main)]">
+        {mode === 'register' ? 'Create an account' : 'Sign in'}
+      </h1>
+      <p className="mt-2 text-sm text-[var(--text-muted)]">
+        {mode === 'register' ? 'Enter your details to get started.' : 'Use your email or Google account.'}
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-8">
         <div className="space-y-4">
           {mode === 'register' && (
             <div>
-              <label
-                htmlFor="name"
-                className="text-xs font-medium text-[var(--text-muted)]"
-              >
+              <label htmlFor="name" className="text-xs font-medium text-[var(--text-muted)]">
                 Name
               </label>
               <input
@@ -217,10 +216,7 @@ function AuthCard({
           )}
 
           <div>
-            <label
-              htmlFor="email"
-              className="text-xs font-medium text-[var(--text-muted)]"
-            >
+            <label htmlFor="email" className="text-xs font-medium text-[var(--text-muted)]">
               Email
             </label>
             <input
@@ -235,10 +231,7 @@ function AuthCard({
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="text-xs font-medium text-[var(--text-muted)]"
-            >
+            <label htmlFor="password" className="text-xs font-medium text-[var(--text-muted)]">
               Password
             </label>
             <input
@@ -254,17 +247,16 @@ function AuthCard({
           </div>
         </div>
 
-        {error && (
-          <p className="mt-3 text-xs text-[var(--text-muted)]">{error}</p>
-        )}
+        {error && <p className="mt-3 text-xs text-[var(--text-muted)]">{error}</p>}
 
         <button
           type="submit"
           disabled={submitting}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-none border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] disabled:opacity-50"
+          className="mt-5 flex w-full items-center justify-center gap-2 border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-colors hover:border-[var(--border-strong)] disabled:opacity-50"
         >
+          {submitting && <Spinner />}
           {submitting
-            ? 'Please wait…'
+            ? 'Please wait\u2026'
             : mode === 'register'
               ? 'Create account'
               : 'Sign in'}
@@ -274,10 +266,7 @@ function AuthCard({
       {mode === 'signin' && (
         <button
           type="button"
-          onClick={() => {
-            setMode('forgot')
-            setError('')
-          }}
+          onClick={() => { setMode('forgot'); setError('') }}
           className="mt-3 w-full text-center text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)]"
         >
           Forgot your password?
@@ -289,7 +278,7 @@ function AuthCard({
           <div className="w-full border-t border-[var(--border-soft)]" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-[var(--surface-panel)] px-2 text-[var(--text-muted)]">
+          <span className="bg-[var(--surface-page)] px-2 text-[var(--text-muted)]">
             or continue with
           </span>
         </div>
@@ -297,25 +286,13 @@ function AuthCard({
 
       <button
         onClick={signInWithGoogle}
-        className="mt-4 flex w-full items-center justify-center gap-3 rounded-none border border-[var(--border-soft)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)]"
+        className="mt-4 flex w-full items-center justify-center gap-3 border border-[var(--border-soft)] bg-[var(--surface-page)] px-4 py-2.5 text-sm font-semibold text-[var(--text-main)] transition-colors hover:border-[var(--border-strong)]"
       >
         <svg className="h-5 w-5 shrink-0" viewBox="0 0 48 48" aria-hidden>
-          <path
-            fill="#EA4335"
-            d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-          />
-          <path
-            fill="#4285F4"
-            d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M10.53 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.87 7.35 2.56 10.56l7.97-5.97z"
-          />
-          <path
-            fill="#34A853"
-            d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.97C6.51 42.62 14.62 48 24 48z"
-          />
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+          <path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.87 7.35 2.56 10.56l7.97-5.97z" />
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.97C6.51 42.62 14.62 48 24 48z" />
         </svg>
         Google
       </button>
@@ -326,10 +303,7 @@ function AuthCard({
             Already have an account?{' '}
             <button
               type="button"
-              onClick={() => {
-                setMode('signin')
-                setError('')
-              }}
+              onClick={() => { setMode('signin'); setError('') }}
               className="font-medium text-[var(--text-main)] transition-colors hover:text-[var(--text-strong)]"
             >
               Sign in
@@ -340,10 +314,7 @@ function AuthCard({
             Don&apos;t have an account?{' '}
             <button
               type="button"
-              onClick={() => {
-                setMode('register')
-                setError('')
-              }}
+              onClick={() => { setMode('register'); setError('') }}
               className="font-medium text-[var(--text-main)] transition-colors hover:text-[var(--text-strong)]"
             >
               Create one

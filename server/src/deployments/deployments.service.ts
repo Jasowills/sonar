@@ -67,32 +67,43 @@ export class DeploymentsService {
     return [];
   }
 
-  async record(input: RecordDeploymentInput): Promise<DeploymentModel> {
-    // Resolve projectKey → projectId → environmentId if needed
+  async record(input: RecordDeploymentInput, projectId?: string): Promise<DeploymentModel> {
     let environmentId = input.environmentId;
-    if (!environmentId && input.environmentKey && input.projectKey) {
-      const project = await this.prisma.project
-        .findFirst({
-          where: { slug: input.projectKey },
-          select: { id: true },
-        })
-        .catch(() => null);
-      if (project) {
+    if (!environmentId && input.environmentKey) {
+      if (projectId) {
         const env = await this.prisma.environment
           .findFirst({
-            where: { key: input.environmentKey, projectId: project.id },
+            where: { key: input.environmentKey, projectId },
             select: { id: true },
           })
           .catch(() => null);
         if (env) {
           environmentId = env.id;
         }
+      } else if (input.projectKey) {
+        const project = await this.prisma.project
+          .findFirst({
+            where: { slug: input.projectKey },
+            select: { id: true },
+          })
+          .catch(() => null);
+        if (project) {
+          const env = await this.prisma.environment
+            .findFirst({
+              where: { key: input.environmentKey, projectId: project.id },
+              select: { id: true },
+            })
+            .catch(() => null);
+          if (env) {
+            environmentId = env.id;
+          }
+        }
       }
     }
 
     if (!environmentId) {
       throw new HttpException(
-        'environmentId (or environmentKey + projectKey) is required',
+        'environmentId (or environmentKey + valid API key) is required',
         400,
       );
     }

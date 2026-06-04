@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
 import { AlertTriangle, LifeBuoy, Plus, Trash2 } from 'lucide-react'
-import { useStatusPages, useCreateStatusPage, useDeleteStatusPage } from '@/lib/api'
+import { useStatusPages, useCreateStatusPage, useDeleteStatusPage, useWorkspaces } from '@/lib/api'
 
 export function StatusPagesPage() {
   const { data: statusPages, isLoading, error } = useStatusPages()
   const { mutateAsync: createStatusPage } = useCreateStatusPage()
   const { mutateAsync: deleteStatusPage } = useDeleteStatusPage()
+  const { data: workspaces } = useWorkspaces()
+  const workspace = workspaces?.[0]
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [headline, setHeadline] = useState('')
@@ -35,7 +37,8 @@ export function StatusPagesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await createStatusPage({ name, headline })
+      if (!workspace) return
+      await createStatusPage({ name, headline, workspaceId: workspace.id })
       setName('')
       setHeadline('')
       setShowForm(false)

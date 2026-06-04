@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { GqlExecutionContext } from '@nestjs/graphql';
+import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 
 import type { AuthenticatedUser } from './jwt';
 import { IS_PUBLIC_KEY } from './public.decorator';
@@ -20,6 +20,11 @@ export class GqlAuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) return true;
+
+    // Only apply to GraphQL requests — REST endpoints use ApiKeyGuard or @Public()
+    if (context.getType<GqlContextType>() !== 'graphql') {
+      return true;
+    }
 
     const ctx = GqlExecutionContext.create(context);
     const user = ctx.getContext<{ user: AuthenticatedUser | null }>().user;

@@ -51,7 +51,7 @@
 <div id="banner"></div>
 
 <script>
-var SDK = { projectKey: '--', environmentKey: '--', apiKey: '--', endpoint: 'http://localhost:8080', ok: false, message: '' }
+var SDK = { environmentKey: '--', apiKey: '--', endpoint: 'http://localhost:8080', ok: false, message: '' }
 
 function init() {
   fetch('/api/health').then(function(r) {
@@ -139,19 +139,30 @@ function render(ok) {
   html += card('GET', '/api/error', 'Always 500. Tests down monitor state.', 'http://localhost:3001/api/error', 'error', true)
   html += card('GET', '/api/version', 'Service metadata (version, node, uptime).', 'http://localhost:3001/api/version', 'version', true)
 
+  html += '<h2>Status Page Endpoints</h2>'
+  html += '<p class="desc">Aggregate health JSON that Sonar status pages can consume.</p>'
+  html += card('GET', '/api/status', 'Overall status page JSON (all services).', 'http://localhost:3001/api/status', 'status', true)
+  html += card('GET', '/api/status/services', 'Per-service health statuses.', 'http://localhost:3001/api/status/services', 'status-services', true)
+
   html += '<h2>SDK Triggers</h2>'
   html += '<p class="desc">Fire events through the @sonar/sdk — they show up on your dashboards in real time.</p>'
   html += card('POST', '/trigger/error', 'Captures a single error via SDK.', '', 'trigger-error')
   html += card('POST', '/trigger/errors/batch', 'Captures 3 errors with different fingerprints.', '', 'trigger-batch')
   html += card('POST', '/trigger/errors/with-stack', 'Throws from a deeply nested function call.', '', 'trigger-stack')
+  html += card('POST', '/trigger/rejection', 'Simulates an unhandled promise rejection.', '', 'trigger-rejection')
   html += card('POST', '/trigger/deploy', 'Records a successful deployment.', '', 'trigger-deploy', false, 'green')
   html += card('POST', '/trigger/deploy/fail', 'Records a failed deployment.', '', 'trigger-deploy-fail', false, 'green')
+
+  html += '<h2>Status Page Triggers</h2>'
+  html += '<p class="desc">Manage Sonar status pages via GraphQL. Requires <code>workspaceId</code> — find it in the Sonar dashboard URL.</p>'
+  html += card('POST', '/trigger/status-page?workspaceId=ws_xxx&name=Testing+Hub+Status', 'Create status page from query params.', '', 'trigger-sp-create')
+  html += card('POST', '/trigger/status-page/add-service?statusPageId=sp_xxx&serviceId=svc_health', 'Link a service to a status page.', '', 'trigger-sp-add')
+  html += card('POST', '/trigger/status-page/delete?id=sp_xxx', 'Delete a status page.', '', 'trigger-sp-delete')
 
   html += '<h2>SDK Configuration</h2>'
   html += '<div class="sdk-banner">'
   html += '<strong>@sonar/sdk</strong> is configured via environment variables in <code>.env</code>:<br><br>'
   html += '<span class="key">SONAR_ENDPOINT</span> <span class="val">' + SDK.endpoint + '</span><br>'
-  html += '<span class="key">SONAR_PROJECT_KEY</span> <span class="val">' + SDK.projectKey + '</span><br>'
   html += '<span class="key">SONAR_ENVIRONMENT_KEY</span> <span class="val">' + SDK.environmentKey + '</span><br>'
   html += '<span class="key">SONAR_API_KEY</span> <span class="val">' + SDK.apiKey + '</span><br><br>'
   if (SDK.ok) {
@@ -170,13 +181,12 @@ function render(ok) {
   fetch('/api/version').then(function(r) { return r.json() }).then(function(d) {
     var el = document.getElementById('val-version')
     if (el) el.textContent = d.version || '-'
-    SDK.projectKey = d.projectKey || SDK.projectKey
     SDK.environmentKey = d.environmentKey || SDK.environmentKey
   }).catch(function() {})
 }
 
 fetch('/api/version').then(function(r) { return r.json() }).then(function(d) {
-  SDK.projectKey = d.projectKey || SDK.projectKey
+  SDK.environmentKey = d.environmentKey || SDK.environmentKey
 }).catch(function() {})
 init()
 </script>

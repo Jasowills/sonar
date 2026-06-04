@@ -690,6 +690,26 @@ export function LandingPage() {
       ref={rootRef}
       className="dark relative min-h-dvh overflow-clip bg-[var(--surface-page)] font-[var(--font-sans)] text-[var(--text-main)] antialiased"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "Sonar",
+            applicationCategory: "DeveloperApplication",
+            operatingSystem: "All",
+            description:
+              "Uptime monitoring, error tracing, alert routing, incident response, and status pages for SaaS teams.",
+            url: "https://sonar.app",
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "USD",
+            },
+          }),
+        }}
+      />
       {createPortal(
         <div className="landing-grain" aria-hidden />,
         document.body,

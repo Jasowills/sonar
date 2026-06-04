@@ -37,7 +37,8 @@ export function NotificationPanel() {
 
   // Refetch when SSE notification arrives
   useEffect(() => {
-    if (lastEvent && lastEvent.type === 'notification') {
+    if (!lastEvent) return
+    if (lastEvent.type === 'notification' || lastEvent.type === 'error_created') {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] })
     }

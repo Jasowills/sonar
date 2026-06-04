@@ -21,10 +21,6 @@ export class Sonar {
     this.client.setToken(token)
   }
 
-  async authenticate(email: string, password: string): Promise<string> {
-    return this.client.authenticate(email, password)
-  }
-
   captureError(error: Error, options?: CaptureErrorOptions) {
     const fingerprint =
       options?.fingerprint ??
@@ -32,7 +28,7 @@ export class Sonar {
 
     const payload = {
       fingerprint,
-      title: error.message,
+      message: error.message,
       stack: options?.stack ?? error.stack,
       release: this.release,
       metadata: options?.metadata,

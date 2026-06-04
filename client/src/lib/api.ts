@@ -172,6 +172,7 @@ export function useOverviewSnapshot(workspaceSlug?: string) {
       }>(OVERVIEW_SNAPSHOT_QUERY, { workspaceSlug })
       return data.overviewSnapshot
     },
+    refetchInterval: 15_000,
   })
 }
 
@@ -185,6 +186,7 @@ export function useMonitors(projectSlug?: string, environmentKey?: string) {
       )
       return data.monitors
     },
+    refetchInterval: 15_000,
   })
 }
 
@@ -840,6 +842,7 @@ export function useErrorGroups(projectSlug?: string, environmentKey?: string) {
       )
       return data.errorGroups
     },
+    refetchInterval: 15_000,
   })
 }
 

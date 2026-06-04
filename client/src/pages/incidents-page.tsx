@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
 import { AlertTriangle, Siren, Plus, Check } from 'lucide-react'
-import { useIncidents, useCreateIncident, useUpdateIncident } from '@/lib/api'
+import { useIncidents, useCreateIncident, useUpdateIncident, useWorkspaces, useProjects } from '@/lib/api'
 
 const SEVERITY_STYLES: Record<string, { color: string }> = {
   CRITICAL: { color: '#dc2626' },
@@ -14,6 +14,10 @@ export function IncidentsPage() {
   const { data: incidents, isLoading, error } = useIncidents()
   const { mutateAsync: createIncident } = useCreateIncident()
   const { mutateAsync: updateIncident } = useUpdateIncident()
+  const { data: workspaces } = useWorkspaces()
+  const { data: projects } = useProjects()
+  const workspaceId = workspaces?.[0]?.id
+  const projectId = projects?.[0]?.id
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [severity, setSeverity] = useState('MEDIUM')
@@ -43,7 +47,8 @@ export function IncidentsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await createIncident({ title, severity, summary })
+      if (!workspaceId || !projectId) return
+      await createIncident({ title, severity, summary, workspaceId, projectId })
       setTitle('')
       setSeverity('MEDIUM')
       setSummary('')

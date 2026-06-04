@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { monitorRouter } from './routes/monitor-routes.js'
+import { statusRouter } from './routes/status-routes.js'
 import { triggerRouter } from './routes/trigger-routes.js'
 import { sonar, checkSdkStatus } from './sonar.js'
 
@@ -22,6 +23,7 @@ app.get('/api/sdk-status', async (_req, res) => {
 })
 
 app.use('/api', monitorRouter)
+app.use('/api', statusRouter)
 app.use('/trigger', triggerRouter)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -32,6 +34,7 @@ app.listen(PORT, async () => {
   console.log(`\n  ── testing-hub ──`)
   console.log(`  web UI         → http://localhost:${PORT}`)
   console.log(`  monitor urls   → http://localhost:${PORT}/api/*`)
+  console.log(`  status pages   → http://localhost:${PORT}/api/status*`)
   console.log(`  trigger urls   → http://localhost:${PORT}/trigger/*`)
   const sdk = await checkSdkStatus()
   if (sdk.ok) {

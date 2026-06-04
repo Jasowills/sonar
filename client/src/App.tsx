@@ -22,6 +22,7 @@ import { SettingsPage } from '@/pages/settings-page'
 import { StatusPagesPage } from '@/pages/status-pages-page'
 import { TeamPage } from '@/pages/team-page'
 import { TermsPage } from '@/pages/terms-page'
+import { SEO } from '@/lib/seo'
 import { useTheme } from '@/hooks/use-theme'
 
 const LandingPage = lazy(() =>
@@ -107,6 +108,11 @@ function AppContent() {
       <Suspense
         fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}
       >
+        <SEO
+          title="Observability for SaaS teams"
+          description="Sonar combines uptime monitoring, error tracing, alert routing, incident response, and status pages for small SaaS teams."
+          path="/"
+        />
         <LandingPage />
       </Suspense>
     )
@@ -129,11 +135,63 @@ function AppContent() {
   if (isPublicMarketingRoute) {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/docs" element={<DocsPage />} />
+        <Route
+          path="/login"
+          element={
+            <>
+              <SEO title="Sign in" path="/login" noindex />
+              <LoginPage />
+            </>
+          }
+        />
+        <Route
+          path="/auth/callback"
+          element={
+            <>
+              <SEO title="Authenticating" path="/auth/callback" noindex />
+              <AuthCallbackPage />
+            </>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <>
+              <SEO
+                title="Privacy Policy"
+                description="Sonar privacy policy — how we collect, use, and protect your data."
+                path="/privacy"
+              />
+              <PrivacyPage />
+            </>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <>
+              <SEO
+                title="Terms of Service"
+                description="Sonar terms of service — rules and guidelines for using our platform."
+                path="/terms"
+              />
+              <TermsPage />
+            </>
+          }
+        />
+        <Route
+          path="/docs"
+          element={
+            <>
+              <SEO
+                title="Documentation"
+                description="Sonar documentation — SDK reference, API guides, and integration tutorials for uptime monitoring and error tracing."
+                path="/docs"
+              />
+              <DocsPage />
+            </>
+          }
+        />
       </Routes>
     )
   }

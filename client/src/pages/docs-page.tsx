@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import Fuse from 'fuse.js'
 import {
   ArrowRight,
   Book,
@@ -724,7 +725,6 @@ curl -s -X POST https://api.sonar.app/ingest/errors \\
   -d '{
     "fingerprint": "CLITest",
     "message": "Manual test error",
-    "projectKey": "proj_xxx",
     "environmentKey": "env_xxx"
   }'
 
@@ -733,7 +733,6 @@ curl -s -X POST https://api.sonar.app/ingest/deployments \\
   -H "Authorization: Bearer wdp_xxxx_yyyy" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "projectKey": "proj_xxx",
     "environmentKey": "env_xxx",
     "version": "v1.0.0",
     "status": "SUCCEEDED",
@@ -755,6 +754,9 @@ type SearchEntry = {
   sectionId: string
   subLabel: string | undefined
   title: string
+  body: string
+  sections: string
+  code: string
 }
 
 const searchIndex: SearchEntry[] = Object.entries(content).map(([key, val]) => {
@@ -763,7 +765,27 @@ const searchIndex: SearchEntry[] = Object.entries(content).map(([key, val]) => {
   const subLabel = section && key !== section.id
     ? key.slice(section.id.length + 1).replace(/-/g, ' ')
     : undefined
-  return { key, sectionId, subLabel, title: val.title }
+  return {
+    key,
+    sectionId,
+    subLabel,
+    title: val.title,
+    body: val.body,
+    sections: (val.sections ?? []).flatMap((s) => `${s.heading} ${s.text}`).join(' '),
+    code: val.code ?? '',
+  }
+})
+
+const fuse = new Fuse(searchIndex, {
+  keys: [
+    { name: 'title', weight: 10 },
+    { name: 'sections', weight: 5 },
+    { name: 'body', weight: 3 },
+    { name: 'code', weight: 1 },
+  ],
+  threshold: 0.4,
+  distance: 100,
+  minMatchCharLength: 2,
 })
 
 export function DocsPage() {
@@ -772,8 +794,11 @@ export function DocsPage() {
   const [search, setSearch] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const searchRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -786,31 +811,83 @@ export function DocsPage() {
   }, [])
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
   }, [activeSection, activeSub])
 
   const current = lookupContent(activeSection, activeSub)
-  const currentLabel = activeSub
-    ?? sections.find((s) => s.id === activeSection)?.label
-    ?? ''
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return null
-    const q = search.toLowerCase()
-    const results = searchIndex.filter(
-      (entry) =>
-        entry.title.toLowerCase().includes(q) ||
-        content[entry.key]?.body.toLowerCase().includes(q),
-    )
-    return results.length > 0 ? results : []
+    return fuse.search(search)
   }, [search])
+
+  const resultsList = searchResults ?? []
 
   const navigateTo = (sectionId: string, subLabel?: string) => {
     setActiveSection(sectionId)
     setActiveSub(subLabel)
     setSearch('')
     setSearchFocused(false)
+    setSelectedIndex(0)
     setSidebarOpen(false)
+  }
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setSearch(value)
+      setSelectedIndex(0)
+    }, 150)
+  }, [])
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!resultsList.length) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex((i) => (i + 1) % resultsList.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex((i) => (i - 1 + resultsList.length) % resultsList.length)
+    } else if (e.key === 'Enter' && resultsList[selectedIndex]) {
+      e.preventDefault()
+      const entry = resultsList[selectedIndex].item
+      navigateTo(entry.sectionId, entry.subLabel)
+    } else if (e.key === 'Escape') {
+      setSearchFocused(false)
+      inputRef.current?.blur()
+    }
+  }
+
+  function highlightMatch(text: string, query: string): React.ReactNode {
+    if (!query.trim()) return text
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase()
+        ? <mark key={i} className="bg-[var(--text-main)] text-[var(--surface-page)]">{part}</mark>
+        : part,
+    )
+  }
+
+  function getSnippet(text: string, query: string, maxLen = 120): string {
+    if (!query.trim()) return text.slice(0, maxLen)
+    const idx = text.toLowerCase().indexOf(query.toLowerCase())
+    if (idx === -1) return text.slice(0, maxLen)
+    const start = Math.max(0, idx - 40)
+    const end = Math.min(text.length, idx + query.length + 60)
+    return `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`
   }
 
   return (
@@ -849,11 +926,12 @@ export function DocsPage() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
+              ref={inputRef}
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              placeholder="Search documentation…"
+              onChange={handleSearchChange}
+              onFocus={() => { setSearchFocused(true); setSelectedIndex(0) }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search documentation…  (press  /  to focus)"
               className="w-full border border-[var(--border-soft)] bg-[var(--surface-panel)] py-2 pl-10 pr-10 text-sm text-[var(--text-main)] outline-none placeholder:text-[var(--text-soft)] focus:border-[var(--border-strong)]"
             />
             <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-xs text-[var(--text-soft)] md:inline">
@@ -861,27 +939,47 @@ export function DocsPage() {
             </kbd>
           </div>
 
-          {searchFocused && searchResults !== null && (
+          {searchFocused && search !== '' && (
             <div className="absolute inset-x-5 z-50 mt-1 border border-[var(--border-soft)] bg-[var(--surface-panel)] shadow-lg lg:inset-x-auto lg:w-[calc(100%-4rem)]">
-              {searchResults.length > 0 ? (
-                searchResults.map((entry) => (
-                  <button
-                    key={entry.key}
-                    type="button"
-                    onClick={() => navigateTo(entry.sectionId, entry.subLabel)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
-                  >
-                    <ChevronRight className="h-3 w-3 shrink-0 text-[var(--text-muted)]" />
-                    <div>
-                      <span>{entry.title}</span>
-                      {entry.subLabel && (
-                        <span className="ml-2 text-xs text-[var(--text-soft)]">
-                          — {sections.find((s) => s.id === entry.sectionId)?.label}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))
+              {resultsList.length > 0 ? (
+                resultsList.map(({ item: entry, refIndex }, index) => {
+                  const snippet = getSnippet(entry.body, search)
+                  const isSelected = index === selectedIndex
+                  return (
+                    <button
+                      key={entry.key}
+                      type="button"
+                      ref={(el) => {
+                        if (isSelected) el?.scrollIntoView({ block: 'nearest' })
+                      }}
+                      onClick={() => navigateTo(entry.sectionId, entry.subLabel)}
+                      className={`flex w-full items-start gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-[var(--surface-panel-soft)] text-[var(--text-main)]'
+                          : 'text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]'
+                      }`}
+                    >
+                      <ChevronRight className={`mt-0.5 h-3 w-3 shrink-0 ${
+                        isSelected ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                      }`} />
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {highlightMatch(entry.title, search)}
+                          {entry.subLabel && (
+                            <span className="ml-2 text-xs font-normal text-[var(--text-soft)]">
+                              — {sections.find((s) => s.id === entry.sectionId)?.label}
+                            </span>
+                          )}
+                        </div>
+                        {snippet && (
+                          <div className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
+                            {highlightMatch(snippet, search)}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })
               ) : (
                 <div className="px-4 py-3 text-sm text-[var(--text-muted)]">
                   No results for &ldquo;{search}&rdquo;.

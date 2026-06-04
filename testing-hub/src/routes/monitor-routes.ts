@@ -41,7 +41,7 @@ monitorRouter.get('/version', (_req: Request, res: Response) => {
     service: 'my-awesome-api',
     version: `0.1.0-${Math.floor((Date.now() - START) / 1000)}s`,
     node: process.version,
-    projectKey: process.env.SONAR_PROJECT_KEY ?? '(not set)',
     environmentKey: process.env.SONAR_ENVIRONMENT_KEY ?? '(not set)',
+    apiKeySet: Boolean(process.env.SONAR_API_KEY),
   })
 })

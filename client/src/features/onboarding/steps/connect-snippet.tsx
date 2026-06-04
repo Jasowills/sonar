@@ -1,4 +1,4 @@
-export function ConnectSnippet({ projectKey, envKey }: { projectKey: string; envKey: string }) {
+export function ConnectSnippet({ envKey }: { envKey: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-[var(--text-muted)]">
@@ -10,8 +10,8 @@ export function ConnectSnippet({ projectKey, envKey }: { projectKey: string; env
 import { Sonar } from '@sonar/sdk'
 
 const sonar = new Sonar({
-  projectKey: '${projectKey || '<your-project-key>'}',
-  envKey: '${envKey || '<your-env-key>'}',
+  apiKey: process.env.SONAR_API_KEY,
+  environment: '${envKey || '<your-env-key>'}',
 })
 
 // Capture errors

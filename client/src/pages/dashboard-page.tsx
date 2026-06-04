@@ -1,4 +1,4 @@
-import { Activity, Package, Plus } from 'lucide-react'
+import { Activity, ArrowRight, Package, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -15,9 +15,36 @@ import {
 import { deploymentStatusMeta } from '@/lib/deployment-status'
 import { timeAgo } from '@/lib/format'
 import { PageNotice } from '@/components/page-notice'
+import { LogoMark } from '@/components/logo'
 import { CreateMonitorModal } from '@/features/create/create-monitor-modal'
 import { OnboardingWizard } from '@/features/onboarding/onboarding-wizard'
 import { useSelectedProject } from '@/hooks/use-selected-project'
+
+const DISMISS_KEY = 'sonar:onboarding-dismissed'
+
+function isOnboardingDismissed(): boolean {
+  try {
+    return localStorage.getItem(DISMISS_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function dismissOnboarding() {
+  try {
+    localStorage.setItem(DISMISS_KEY, 'true')
+  } catch {
+    // noop
+  }
+}
+
+function resumeOnboarding() {
+  try {
+    localStorage.removeItem(DISMISS_KEY)
+  } catch {
+    // noop
+  }
+}
 
 export function DashboardPage() {
   const { project } = useSelectedProject()
@@ -26,6 +53,7 @@ export function DashboardPage() {
   const { data: deploys } = useDeployments(5)
   const { data: errorGroups } = useErrorGroups(project?.slug)
   const [showCreateMonitor, setShowCreateMonitor] = useState(false)
+  const [dismissed, setDismissed] = useState(isOnboardingDismissed)
 
   if (isLoading) {
     return <PageNotice variant="loading" message="Loading…" />
@@ -43,8 +71,52 @@ export function DashboardPage() {
 
   const monitorList = monitors ?? data.monitors
 
-  if (monitorList.length === 0) {
-    return <OnboardingWizard />
+  if (monitorList.length === 0 && !dismissed) {
+    return (
+      <OnboardingWizard
+        onSkip={() => {
+          dismissOnboarding()
+          setDismissed(true)
+        }}
+      />
+    )
+  }
+
+  if (monitorList.length === 0 && dismissed) {
+    return (
+      <>
+        <div className="flex flex-col items-center justify-center gap-4 py-24">
+          <LogoMark className="h-10 w-10" />
+          <p className="text-lg font-semibold text-[var(--text-main)]">Welcome to Sonar</p>
+          <p className="max-w-sm text-center text-sm text-[var(--text-muted)]">
+            Your dashboard is empty. Create a monitor to start tracking uptime, or pick up the setup guide.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateMonitor(true)}
+              className="flex items-center gap-1.5 border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-4 py-2 text-sm font-medium text-[var(--text-main)] hover:border-[var(--border-strong)]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create monitor
+            </button>
+            <button
+              onClick={() => {
+                resumeOnboarding()
+                setDismissed(false)
+              }}
+              className="flex items-center gap-1.5 border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
+            >
+              Setup guide
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <CreateMonitorModal
+          open={showCreateMonitor}
+          onClose={() => setShowCreateMonitor(false)}
+        />
+      </>
+    )
   }
 
   return (

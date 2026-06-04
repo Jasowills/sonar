@@ -27,7 +27,7 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or revoked API key');
     }
 
-    (request as Request & { projectId?: string }).projectId = projectId;
+    request.projectId = projectId;
     return true;
   }
 }

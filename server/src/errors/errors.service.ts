@@ -2,7 +2,9 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'node:crypto';
 
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsService } from '../events/events.service';
 import { mapPrismaError } from '../shared/prisma-errors';
 import { fallbackErrorGroups } from '../shared/fallback-data';
 import { ErrorEventModel } from './models/error-event.model';
@@ -35,7 +37,11 @@ type FindParams = {
 
 @Injectable()
 export class ErrorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventsService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async findAll(params: FindParams): Promise<ErrorGroupModel[]> {
     const limit = params.limit ?? 20;
@@ -85,22 +91,23 @@ export class ErrorsService {
     }
   }
 
-  async record(input: RecordErrorInput): Promise<ErrorGroupModel> {
+  async record(input: RecordErrorInput, projectId?: string): Promise<ErrorGroupModel> {
     const fingerprint = input.fingerprint.trim();
     const now = new Date();
 
-    // Resolve projectKey → projectId if needed
-    let projectId = input.projectId;
-    if (!projectId && input.projectKey) {
-      const project = await this.prisma.project
-        .findFirst({ where: { slug: input.projectKey }, select: { id: true } })
-        .catch(() => null);
-      if (project) {
-        projectId = project.id;
+    if (!projectId) {
+      if (input.projectKey) {
+        const project = await this.prisma.project
+          .findFirst({ where: { slug: input.projectKey }, select: { id: true } })
+          .catch(() => null);
+        if (project) {
+          projectId = project.id;
+        }
+      } else if (input.projectId) {
+        projectId = input.projectId;
       }
     }
 
-    // Resolve environmentKey → environmentId if needed
     let environmentId = input.environmentId;
     if (!environmentId && input.environmentKey && projectId) {
       const env = await this.prisma.environment
@@ -116,7 +123,7 @@ export class ErrorsService {
 
     if (!projectId || !environmentId) {
       throw new HttpException(
-        'projectId (or projectKey) and environmentId (or environmentKey) are required',
+        'projectId and environmentId (or environmentKey) are required',
         400,
       );
     }
@@ -140,6 +147,8 @@ export class ErrorsService {
 
         await this.appendEvent(group.id, input, now);
 
+        this.emitErrorEvent(group.id, input.message, projectId);
+
         return this.toView(group);
       }
 
@@ -162,9 +171,49 @@ export class ErrorsService {
 
       await this.appendEvent(group.id, input, now);
 
+      this.emitErrorEvent(group.id, input.message, projectId);
+
       return this.toView(group);
     } catch (error) {
       mapPrismaError(error);
+    }
+  }
+
+  private emitErrorEvent(errorGroupId: string, title: string, projectId?: string) {
+    console.log(`[ErrorsService] emit SSE error_created groupId=${errorGroupId} title="${title}" projectId=${projectId ?? '-'}`);
+    this.events.emit({
+      type: 'error_created',
+      data: { errorGroupId, title },
+    });
+
+    if (projectId) {
+      this.createErrorNotifications(title, projectId).catch(() => {
+        // notifications are best-effort
+      });
+    }
+  }
+
+  private async createErrorNotifications(title: string, projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { workspaceId: true },
+    });
+    if (!project) return;
+
+    const memberships = await this.prisma.membership.findMany({
+      where: { workspaceId: project.workspaceId },
+      select: { userId: true },
+    });
+
+    for (const m of memberships) {
+      await this.notifications.create({
+        type: 'error_created',
+        title: 'New Error',
+        body: title,
+        link: `/app/errors`,
+        userId: m.userId,
+        workspaceId: project.workspaceId,
+      });
     }
   }
 
