@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell, CheckCheck, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -10,21 +10,40 @@ import { timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useEventSource } from '@/lib/event-source'
 
-function NotificationDot({ type }: { type: string }) {
-  const colors: Record<string, string> = {
-    monitor_down: 'bg-[var(--dot-down)]',
-    monitor_up: 'bg-[var(--dot-healthy)]',
-    monitor_degraded: 'bg-[var(--dot-degraded)]',
-    incident_created: 'bg-[var(--dot-down)]',
-    incident_resolved: 'bg-[var(--dot-healthy)]',
-    deploy_completed: 'bg-[var(--dot-healthy)]',
-    alert_fired: 'bg-[var(--dot-degraded)]',
+const TYPE_COLORS: Record<string, { dot: string; bg: string }> = {
+  monitor_down: { dot: 'bg-[var(--dot-down)]', bg: 'bg-red-950/20' },
+  monitor_up: { dot: 'bg-[var(--dot-healthy)]', bg: 'bg-green-950/20' },
+  monitor_degraded: { dot: 'bg-[var(--dot-degraded)]', bg: 'bg-yellow-950/20' },
+  incident_created: { dot: 'bg-[var(--dot-down)]', bg: 'bg-red-950/20' },
+  incident_resolved: { dot: 'bg-[var(--dot-healthy)]', bg: 'bg-green-950/20' },
+  deploy_completed: { dot: 'bg-[var(--dot-healthy)]', bg: 'bg-green-950/20' },
+  alert_fired: { dot: 'bg-[var(--dot-degraded)]', bg: 'bg-yellow-950/20' },
+  error_created: { dot: 'bg-[var(--dot-down)]', bg: 'bg-red-950/20' },
+}
+
+function typeColor(type: string) {
+  return TYPE_COLORS[type] ?? { dot: 'bg-[var(--text-soft)]', bg: 'bg-[var(--surface-panel-soft)]/50' }
+}
+
+let audioCtx: AudioContext | null = null
+
+function playNotificationSound() {
+  try {
+    if (!audioCtx) audioCtx = new AudioContext()
+    const osc = audioCtx.createOscillator()
+    const gain = audioCtx.createGain()
+    osc.connect(gain)
+    gain.connect(audioCtx.destination)
+    osc.type = 'sine'
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4)
+    osc.frequency.setValueAtTime(660, audioCtx.currentTime)
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1)
+    osc.start(audioCtx.currentTime)
+    osc.stop(audioCtx.currentTime + 0.4)
+  } catch {
+    // audio not available
   }
-  return (
-    <span
-      className={`mt-1 inline-block h-2 w-2 shrink-0 rounded-full ${colors[type] ?? 'bg-[var(--text-soft)]'}`}
-    />
-  )
 }
 
 export function NotificationPanel() {
@@ -34,15 +53,26 @@ export function NotificationPanel() {
   const { data: unreadCount } = useUnreadCount()
   const markAllRead = useMarkAllNotificationsRead()
   const { lastEvent } = useEventSource()
+  const prevUnreadRef = useRef(0)
 
   // Refetch when SSE notification arrives
   useEffect(() => {
     if (!lastEvent) return
     if (lastEvent.type === 'notification' || lastEvent.type === 'error_created') {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
-      queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] })
+      queryClient.invalidateQueries({ queryKey: ['unreadCount'] })
     }
   }, [lastEvent, queryClient])
+
+  // Play sound when unread count increases
+  useEffect(() => {
+    const prev = prevUnreadRef.current
+    const current = unreadCount ?? 0
+    if (current > prev && !open) {
+      playNotificationSound()
+    }
+    prevUnreadRef.current = current
+  }, [unreadCount, open])
 
   const unread = unreadCount ?? 0
   const items = notifications ?? []
@@ -114,7 +144,7 @@ export function NotificationPanel() {
           )}
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {items.length === 0 ? (
               <div className="flex flex-col items-center px-5 py-16">
                 <Bell className="mb-3 h-8 w-8 text-[var(--text-soft)]" />
@@ -125,32 +155,37 @@ export function NotificationPanel() {
               </div>
             ) : (
               <div className="divide-y divide-[var(--border-soft)]">
-                {items.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex gap-3 px-5 py-3.5 ${n.read ? '' : 'bg-[var(--surface-panel-soft)]'}`}
-                  >
-                    <NotificationDot type={n.type} />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`text-sm ${n.read ? 'text-[var(--text-muted)]' : 'font-medium text-[var(--text-main)]'}`}
-                      >
-                        {n.title}
-                      </p>
-                      {n.body && (
-                        <p className="mt-0.5 text-xs text-[var(--text-soft)]">
-                          {n.body}
+                {items.map((n) => {
+                  const tc = typeColor(n.type)
+                  return (
+                    <div
+                      key={n.id}
+                      className={`flex gap-3 px-5 py-3.5 ${n.read ? '' : tc.bg}`}
+                    >
+                      <span
+                        className={`mt-1 inline-block h-2 w-2 shrink-0 rounded-full ${tc.dot}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm ${n.read ? 'text-[var(--text-muted)]' : 'font-medium text-[var(--text-main)]'}`}
+                        >
+                          {n.title}
                         </p>
+                        {n.body && (
+                          <p className="mt-0.5 text-xs text-[var(--text-soft)]">
+                            {n.body}
+                          </p>
+                        )}
+                        <p className="mt-1 text-[11px] text-[var(--text-soft)]">
+                          {timeAgo(n.createdAt)}
+                        </p>
+                      </div>
+                      {!n.read && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--text-main)]" />
                       )}
-                      <p className="mt-1 text-[11px] text-[var(--text-soft)]">
-                        {timeAgo(n.createdAt)}
-                      </p>
                     </div>
-                    {!n.read && (
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--text-main)]" />
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

@@ -10,6 +10,7 @@ export class CreateIncidentInput {
   @Field() @IsString() @IsNotEmpty() projectId!: string;
   @Field({ nullable: true }) @IsOptional() @IsString() environmentId?: string;
   @Field({ nullable: true }) @IsOptional() @IsString() serviceId?: string;
+  @Field({ nullable: true }) @IsOptional() @IsString() monitorId?: string;
   @Field({ nullable: true }) @IsOptional() @IsString() ownerUserId?: string;
 }
 

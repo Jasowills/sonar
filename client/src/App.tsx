@@ -12,13 +12,16 @@ import { DeploymentsPage } from '@/pages/deployments-page'
 import { DocsPage } from '@/pages/docs-page'
 import { EnvironmentsPage } from '@/pages/environments-page'
 import { ErrorsPage } from '@/pages/errors-page'
+import { IncidentDetailPage } from '@/pages/incident-detail-page'
 import { IncidentsPage } from '@/pages/incidents-page'
 import { LoginPage } from '@/pages/login-page'
 import { MonitorsPage } from '@/pages/monitors-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { PrivacyPage } from '@/pages/privacy-page'
+import { PublicStatusPage } from '@/pages/public-status-page'
 import { ServicesPage } from '@/pages/services-page'
 import { SettingsPage } from '@/pages/settings-page'
+import { StatusPageDetailPage } from '@/pages/status-page-detail-page'
 import { StatusPagesPage } from '@/pages/status-pages-page'
 import { TeamPage } from '@/pages/team-page'
 import { TermsPage } from '@/pages/terms-page'
@@ -91,6 +94,12 @@ const pageMeta: Record<string, { title: string; eyebrow: string; description: st
 
 const PUBLIC_ROUTES = ['/', '/login', '/auth/callback', '/privacy', '/terms', '/docs']
 
+function isPublicPath(path: string): boolean {
+  if (PUBLIC_ROUTES.includes(path)) return true
+  if (path.startsWith('/status/')) return true
+  return false
+}
+
 function AppContent() {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
@@ -120,7 +129,7 @@ function AppContent() {
 
   if (
     state.status === 'unauthenticated' &&
-    !PUBLIC_ROUTES.includes(location.pathname)
+    !isPublicPath(location.pathname)
   ) {
     return <Navigate to="/login" replace />
   }
@@ -131,6 +140,14 @@ function AppContent() {
     location.pathname === '/privacy' ||
     location.pathname === '/terms' ||
     location.pathname === '/docs'
+
+  if (location.pathname.startsWith('/status/')) {
+    return (
+      <Routes>
+        <Route path="/status/:slug" element={<PublicStatusPage />} />
+      </Routes>
+    )
+  }
 
   if (isPublicMarketingRoute) {
     return (
@@ -215,11 +232,13 @@ function AppContent() {
         <Route path="/app/monitors" element={<MonitorsPage />} />
         <Route path="/app/errors" element={<ErrorsPage />} />
         <Route path="/app/incidents" element={<IncidentsPage />} />
+        <Route path="/app/incidents/:id" element={<IncidentDetailPage />} />
         <Route path="/app/deployments" element={<DeploymentsPage />} />
         <Route path="/app/integrations" element={<AlertsPage />} />
         <Route path="/app/services" element={<ServicesPage />} />
         <Route path="/app/environments" element={<EnvironmentsPage />} />
         <Route path="/app/status-pages" element={<StatusPagesPage />} />
+        <Route path="/app/status-pages/:id" element={<StatusPageDetailPage />} />
         <Route path="/app/team" element={<TeamPage />} />
         <Route path="/app/settings" element={<SettingsPage />} />
 

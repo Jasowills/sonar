@@ -43,4 +43,7 @@ export class IncidentModel {
 
   @Field(() => String, { nullable: true })
   ownerUserId: string | null;
+
+  @Field(() => String, { nullable: true })
+  monitorId: string | null;
 }

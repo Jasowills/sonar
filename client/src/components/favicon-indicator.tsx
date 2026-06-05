@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { useEventSource } from '@/lib/event-source'
+import { useEffect, useRef } from 'react'
+import { useErrorGroups } from '@/lib/api'
+import { useSelectedProject } from '@/hooks/use-selected-project'
 
 type Status = 'healthy' | 'warning' | 'error'
 
@@ -24,35 +25,12 @@ function svgDataUrl(status: Status): string {
 }
 
 export function FaviconIndicator() {
-  const { lastEvent } = useEventSource()
-  const [status, setStatus] = useState<Status>('healthy')
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { project } = useSelectedProject()
+  const { data: errorGroups } = useErrorGroups(project?.slug)
   const linkRef = useRef<HTMLLinkElement | null>(null)
 
-  useEffect(() => {
-    if (!lastEvent) return
-
-    let next: Status | null = null
-    if (lastEvent.type === 'error_created') {
-      console.log('[Favicon] error_created → error')
-      next = 'error'
-    } else if (lastEvent.type === 'notification') {
-      const nd = lastEvent.data as { type?: string }
-      const t = nd?.type ?? ''
-      console.log('[Favicon] notification type=' + t)
-      if (t === 'monitor_down' || t === 'incident_created') { console.log('[Favicon] → error'); next = 'error' }
-      else if (t === 'monitor_degraded' || t === 'alert_fired') { console.log('[Favicon] → warning'); next = 'warning' }
-      else if (t === 'monitor_up' || t === 'incident_resolved') { console.log('[Favicon] → healthy'); next = 'healthy' }
-    }
-
-    if (next) {
-      setStatus(next)
-      if (timerRef.current) clearTimeout(timerRef.current)
-      if (next !== 'healthy') {
-        timerRef.current = setTimeout(() => { console.log('[Favicon] decay → healthy'); setStatus('healthy') }, 30_000)
-      }
-    }
-  }, [lastEvent])
+  const hasOpenErrors = (errorGroups ?? []).some((g) => g.status === 'OPEN')
+  const status: Status = hasOpenErrors ? 'error' : 'healthy'
 
   useEffect(() => {
     let link = linkRef.current
@@ -66,9 +44,9 @@ export function FaviconIndicator() {
       linkRef.current = link
     }
     const url = svgDataUrl(status)
-    console.log(`[Favicon] set href status=${status} url.length=${url.length}`)
+    console.log(`[Favicon] status=${status} hasOpenErrors=${hasOpenErrors}`)
     link.href = url
-  }, [status])
+  }, [status, hasOpenErrors])
 
   return null
 }

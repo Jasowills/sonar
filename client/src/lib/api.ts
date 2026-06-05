@@ -326,6 +326,7 @@ export function useNotifications(workspaceId?: string, limit = 20) {
       }>(NOTIFICATIONS_QUERY, { workspaceId, limit })
       return data.notifications
     },
+    refetchInterval: 15_000,
   })
 }
 
@@ -634,6 +635,7 @@ export type Incident = {
   projectId: string
   environmentId: string | null
   serviceId: string | null
+  monitorId: string | null
   ownerUserId: string | null
 }
 
@@ -1379,6 +1381,96 @@ export function useUpdateIncident() {
   })
 }
 
+export type IncidentUpdate = {
+  id: string
+  kind: string
+  body: string
+  createdAt: string
+  actorUserId: string | null
+  incidentId: string
+}
+
+const INCIDENT_UPDATES_QUERY = gql`
+  query IncidentUpdates($incidentId: String!) {
+    incidentUpdates(incidentId: $incidentId) {
+      id
+      kind
+      body
+      createdAt
+      actorUserId
+      incidentId
+    }
+  }
+`
+
+export function useIncidentUpdates(incidentId: string) {
+  return useQuery({
+    queryKey: ['incidentUpdates', incidentId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{
+        incidentUpdates: IncidentUpdate[]
+      }>(INCIDENT_UPDATES_QUERY, { incidentId })
+      return data.incidentUpdates
+    },
+    enabled: !!incidentId,
+  })
+}
+
+const RESOLVE_INCIDENT = gql`
+  mutation ResolveIncident($input: ResolveIncidentInput!) {
+    resolveIncident(input: $input) {
+      id title summary severity status startedAt resolvedAt createdAt
+    }
+  }
+`
+
+const ADD_INCIDENT_UPDATE = gql`
+  mutation AddIncidentUpdate($input: AddIncidentUpdateInput!) {
+    addIncidentUpdate(input: $input) {
+      id kind body createdAt actorUserId incidentId
+    }
+  }
+`
+
+export function useResolveIncident() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { id: string; summary?: string }) => {
+      const data = await graphqlClient.request<{ resolveIncident: Incident }>(
+        RESOLVE_INCIDENT,
+        { input },
+      )
+      return data.resolveIncident
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['incidents'] })
+      void queryClient.invalidateQueries({ queryKey: ['incidentUpdates'] })
+    },
+  })
+}
+
+export function useAddIncidentUpdate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      incidentId: string
+      kind: string
+      body: string
+    }) => {
+      const data = await graphqlClient.request<{
+        addIncidentUpdate: IncidentUpdate
+      }>(ADD_INCIDENT_UPDATE, { input })
+      return data.addIncidentUpdate
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['incidentUpdates', vars.incidentId],
+      })
+      void queryClient.invalidateQueries({ queryKey: ['incidents'] })
+    },
+  })
+}
+
 // --- Alert Channels CRUD ---------------------------------------------------
 
 const CREATE_ALERT_CHANNEL = gql`
@@ -1630,6 +1722,152 @@ export function useDeleteStatusPage() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['statusPages'] })
+    },
+  })
+}
+
+// --- Status Page Detail & Service Management --------------------------------
+
+export type ServiceHealth = {
+  id: string
+  serviceId: string
+  name: string
+  displayName: string | null
+  status: string
+  latencyMs: number | null
+  sortOrder: number
+}
+
+export type StatusPageDetail = StatusPage & {
+  services: ServiceHealth[]
+}
+
+const STATUS_PAGE_QUERY = gql`
+  query StatusPage($id: String!) {
+    statusPage(id: $id) {
+      id name slug headline visibility createdAt updatedAt workspaceId projectId
+      services {
+        id serviceId name displayName status latencyMs sortOrder
+      }
+    }
+  }
+`
+
+const STATUS_PAGE_BY_SLUG_QUERY = gql`
+  query StatusPageBySlug($slug: String!) {
+    statusPageBySlug(slug: $slug) {
+      id name slug headline visibility createdAt updatedAt workspaceId projectId
+      services {
+        id serviceId name displayName status latencyMs sortOrder
+      }
+    }
+  }
+`
+
+export function useStatusPage(id: string) {
+  return useQuery({
+    queryKey: ['statusPage', id],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{
+        statusPage: StatusPageDetail
+      }>(STATUS_PAGE_QUERY, { id })
+      return data.statusPage
+    },
+    enabled: !!id,
+  })
+}
+
+export function useStatusPageBySlug(slug: string) {
+  return useQuery({
+    queryKey: ['statusPageBySlug', slug],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{
+        statusPageBySlug: StatusPageDetail
+      }>(STATUS_PAGE_BY_SLUG_QUERY, { slug })
+      return data.statusPageBySlug
+    },
+    enabled: !!slug,
+  })
+}
+
+const UPDATE_STATUS_PAGE = gql`
+  mutation UpdateStatusPage($input: UpdateStatusPageInput!) {
+    updateStatusPage(input: $input) {
+      id name slug headline visibility
+    }
+  }
+`
+
+const ADD_STATUS_PAGE_SERVICE = gql`
+  mutation AddStatusPageService($input: AddStatusPageServiceInput!) {
+    addStatusPageService(input: $input)
+  }
+`
+
+const REMOVE_STATUS_PAGE_SERVICE = gql`
+  mutation RemoveStatusPageService($input: RemoveStatusPageServiceInput!) {
+    removeStatusPageService(input: $input)
+  }
+`
+
+export function useUpdateStatusPage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      id: string
+      name?: string
+      headline?: string
+      visibility?: string
+    }) => {
+      const data = await graphqlClient.request<{
+        updateStatusPage: StatusPage
+      }>(UPDATE_STATUS_PAGE, { input })
+      return data.updateStatusPage
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['statusPages'] })
+      void queryClient.invalidateQueries({ queryKey: ['statusPage'] })
+    },
+  })
+}
+
+export function useAddStatusPageService() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      statusPageId: string
+      serviceId: string
+      displayName?: string
+    }) => {
+      const data = await graphqlClient.request<{
+        addStatusPageService: boolean
+      }>(ADD_STATUS_PAGE_SERVICE, { input })
+      return data.addStatusPageService
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['statusPage', vars.statusPageId],
+      })
+    },
+  })
+}
+
+export function useRemoveStatusPageService() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      statusPageId: string
+      serviceId: string
+    }) => {
+      const data = await graphqlClient.request<{
+        removeStatusPageService: boolean
+      }>(REMOVE_STATUS_PAGE_SERVICE, { input })
+      return data.removeStatusPageService
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['statusPage', vars.statusPageId],
+      })
     },
   })
 }

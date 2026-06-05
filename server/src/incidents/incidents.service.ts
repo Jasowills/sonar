@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsService } from '../events/events.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { mapPrismaError } from '../shared/prisma-errors';
 import { IncidentModel } from './models/incident.model';
 import { IncidentUpdateModel } from './models/incident-update.model';
@@ -12,7 +14,11 @@ import {
 
 @Injectable()
 export class IncidentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventsService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async findAll(): Promise<IncidentModel[]> {
     try {
@@ -27,7 +33,7 @@ export class IncidentsService {
   async create(input: CreateIncidentInput): Promise<IncidentModel> {
     try {
       const now = new Date();
-      return await this.prisma.incident.create({
+      const incident = await this.prisma.incident.create({
         data: {
           title: input.title,
           summary: input.summary ?? null,
@@ -41,8 +47,18 @@ export class IncidentsService {
           environmentId: input.environmentId ?? null,
           serviceId: input.serviceId ?? null,
           ownerUserId: input.ownerUserId ?? null,
+          monitorId: input.monitorId ?? null,
         },
       });
+
+      this.events.emit({
+        type: 'incident_created',
+        data: { incidentId: incident.id, title: incident.title, severity: incident.severity },
+      });
+
+      this.notifyWorkspace(input.workspaceId, 'incident_created', 'Incident Created', incident.title, `/app/incidents`).catch(() => {});
+
+      return incident;
     } catch (error) {
       mapPrismaError(error);
     }
@@ -75,10 +91,19 @@ export class IncidentsService {
       };
       if (input.summary !== undefined) data.summary = input.summary;
 
-      return await this.prisma.incident.update({
+      const incident = await this.prisma.incident.update({
         where: { id: input.id },
         data,
       });
+
+      this.events.emit({
+        type: 'incident_resolved',
+        data: { incidentId: incident.id, title: incident.title },
+      });
+
+      this.notifyWorkspace(incident.workspaceId, 'incident_resolved', 'Incident Resolved', incident.title, `/app/incidents`).catch(() => {});
+
+      return incident;
     } catch (error) {
       mapPrismaError(error);
     }
@@ -87,7 +112,7 @@ export class IncidentsService {
   async addUpdate(input: AddIncidentUpdateInput): Promise<IncidentUpdateModel> {
     try {
       const now = new Date();
-      return await this.prisma.incidentUpdate.create({
+      const update = await this.prisma.incidentUpdate.create({
         data: {
           kind: input.kind,
           body: input.body,
@@ -96,6 +121,13 @@ export class IncidentsService {
           actorUserId: input.actorUserId ?? null,
         },
       });
+
+      this.events.emit({
+        type: 'incident_update',
+        data: { incidentId: input.incidentId, kind: input.kind, body: input.body, updateId: update.id },
+      });
+
+      return update;
     } catch (error) {
       mapPrismaError(error);
     }
@@ -109,6 +141,24 @@ export class IncidentsService {
       });
     } catch {
       return [];
+    }
+  }
+
+  private async notifyWorkspace(workspaceId: string, type: string, title: string, body: string, link: string) {
+    try {
+      const memberships = await this.prisma.membership.findMany({
+        where: { workspaceId },
+        select: { userId: true },
+      });
+      for (const m of memberships) {
+        try {
+          await this.notifications.create({ type, title, body, link, userId: m.userId, workspaceId });
+        } catch {
+          // per-user notification failure is non-critical
+        }
+      }
+    } catch {
+      // workspace member lookup failure is non-critical
     }
   }
 }

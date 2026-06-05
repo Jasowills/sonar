@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../shared/slugify';
 import { StatusPageModel } from './models/status-page.model';
+import { StatusPageDetailModel } from './models/status-page-detail.model';
 import {
   CreateStatusPageInput,
   UpdateStatusPageInput,
@@ -18,6 +19,24 @@ export class StatusPagesService {
       return await this.prisma.statusPage.findMany();
     } catch {
       return [];
+    }
+  }
+
+  async findById(id: string): Promise<StatusPageDetailModel | null> {
+    try {
+      return await this.buildDetail(id);
+    } catch {
+      return null;
+    }
+  }
+
+  async findBySlug(slug: string): Promise<StatusPageDetailModel | null> {
+    try {
+      const page = await this.prisma.statusPage.findUnique({ where: { slug } });
+      if (!page) return null;
+      return await this.buildDetail(page.id);
+    } catch {
+      return null;
     }
   }
 
@@ -97,5 +116,54 @@ export class StatusPagesService {
     } catch {
       return false;
     }
+  }
+
+  private async buildDetail(id: string): Promise<StatusPageDetailModel> {
+    const page = await this.prisma.statusPage.findUniqueOrThrow({
+      where: { id },
+      include: {
+        services: {
+          include: {
+            service: {
+              include: {
+                monitors: {
+                  include: {
+                    checkResults: {
+                      orderBy: { checkedAt: 'desc' },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    return {
+      id: page.id,
+      name: page.name,
+      slug: page.slug,
+      headline: page.headline,
+      visibility: page.visibility,
+      createdAt: page.createdAt,
+      updatedAt: page.updatedAt,
+      workspaceId: page.workspaceId,
+      projectId: page.projectId,
+      services: page.services.map((s) => {
+        const latestCheck = s.service.monitors[0]?.checkResults[0];
+        return {
+          id: s.id,
+          serviceId: s.serviceId,
+          name: s.service.name,
+          displayName: s.displayName,
+          status: latestCheck?.state ?? 'PENDING',
+          latencyMs: latestCheck?.latencyMs ?? null,
+          sortOrder: s.sortOrder,
+        };
+      }),
+    };
   }
 }

@@ -174,6 +174,15 @@ export function AppShell({
       queryClient.invalidateQueries({ queryKey: ['errorGroups'] })
       queryClient.invalidateQueries({ queryKey: ['overviewSnapshot'] })
     }
+    if (['monitor_down', 'monitor_up', 'monitor_degraded'].includes(lastEvent.type)) {
+      console.log('[SSE] invalidating monitors + overviewSnapshot')
+      queryClient.invalidateQueries({ queryKey: ['monitors'] })
+      queryClient.invalidateQueries({ queryKey: ['overviewSnapshot'] })
+    }
+    if (lastEvent.type === 'incident_update') {
+      console.log('[SSE] invalidating incidentUpdates')
+      queryClient.invalidateQueries({ queryKey: ['incidentUpdates'] })
+    }
     if (lastEvent.type === 'notification') {
       const nd = lastEvent.data as { type?: string }
       const nt = nd?.type ?? ''
@@ -185,6 +194,10 @@ export function AppShell({
       if (['incident_created', 'incident_resolved'].includes(nt)) {
         console.log('[SSE] invalidating incidents')
         queryClient.invalidateQueries({ queryKey: ['incidents'] })
+      }
+      if (nt === 'incident_update') {
+        console.log('[SSE] invalidating incidentUpdates')
+        queryClient.invalidateQueries({ queryKey: ['incidentUpdates'] })
       }
       if (nt === 'deploy_completed') {
         console.log('[SSE] invalidating deployments')

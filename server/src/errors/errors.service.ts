@@ -198,22 +198,32 @@ export class ErrorsService {
       where: { id: projectId },
       select: { workspaceId: true },
     });
-    if (!project) return;
+    if (!project) {
+      console.warn(`[ErrorsService] createErrorNotifications: project ${projectId} not found`);
+      return;
+    }
 
     const memberships = await this.prisma.membership.findMany({
       where: { workspaceId: project.workspaceId },
       select: { userId: true },
     });
+    console.log(`[ErrorsService] createErrorNotifications: ${memberships.length} members in workspace ${project.workspaceId}`);
 
     for (const m of memberships) {
-      await this.notifications.create({
-        type: 'error_created',
-        title: 'New Error',
-        body: title,
-        link: `/app/errors`,
-        userId: m.userId,
-        workspaceId: project.workspaceId,
-      });
+      console.log(`[ErrorsService] create notification for user ${m.userId}`);
+      try {
+        await this.notifications.create({
+          type: 'error_created',
+          title: 'New Error',
+          body: title,
+          link: `/app/errors`,
+          userId: m.userId,
+          workspaceId: project.workspaceId,
+        });
+        console.log(`[ErrorsService] notification created for user ${m.userId}`);
+      } catch (err) {
+        console.error(`[ErrorsService] failed to create notification for user ${m.userId}:`, err);
+      }
     }
   }
 

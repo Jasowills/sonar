@@ -1,18 +1,21 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
-import { AlertTriangle, LifeBuoy, Plus, Trash2 } from 'lucide-react'
-import { useStatusPages, useCreateStatusPage, useDeleteStatusPage, useWorkspaces } from '@/lib/api'
+import { AlertTriangle, LifeBuoy, Plus, ExternalLink } from 'lucide-react'
+import { useStatusPages, useCreateStatusPage, useWorkspaces } from '@/lib/api'
 
 export function StatusPagesPage() {
+  const navigate = useNavigate()
   const { data: statusPages, isLoading, error } = useStatusPages()
   const { mutateAsync: createStatusPage } = useCreateStatusPage()
-  const { mutateAsync: deleteStatusPage } = useDeleteStatusPage()
   const { data: workspaces } = useWorkspaces()
   const workspace = workspaces?.[0]
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [headline, setHeadline] = useState('')
   const [mutationError, setMutationError] = useState<string[] | null>(null)
+
+  const clientUrl = import.meta.env.VITE_CLIENT_URL ?? 'http://localhost:3000'
 
   if (isLoading) {
     return (
@@ -45,17 +48,6 @@ export function StatusPagesPage() {
       setMutationError(null)
     } catch (err) {
       setMutationError(parseGraphqlError(err))
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Delete this status page?')) {
-      try {
-        await deleteStatusPage(id)
-        setMutationError(null)
-      } catch (err) {
-        setMutationError(parseGraphqlError(err))
-      }
     }
   }
 
@@ -126,22 +118,34 @@ export function StatusPagesPage() {
             {statusPages.map((page) => (
               <div
                 key={page.id}
-                className="flex items-start justify-between gap-4 px-5 py-4"
+                onClick={() => navigate(`/app/status-pages/${page.id}`)}
+                className="flex cursor-pointer items-start justify-between gap-4 px-5 py-4 hover:bg-[var(--surface-panel-soft)]"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-[var(--text-main)]">{page.name}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{page.slug}</p>
+                  <p className="truncate text-xs text-[var(--text-muted)]">/{page.slug}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2">
+                  <a
+                    href={`${clientUrl}/status/${page.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="border border-[var(--border-soft)] px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                    title="Open public page"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <button
+                    onClick={(e) => navigate(`/app/status-pages/${page.id}`)}
+                    className="border border-[var(--border-soft)] px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                    title="Edit"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </button>
                   <span className="border border-[var(--border-soft)] bg-[var(--surface-panel-soft)] px-2 py-1 text-xs text-[var(--text-muted)]">
                     {page.visibility}
                   </span>
-                  <button
-                    onClick={() => handleDelete(page.id)}
-                    className="border border-[var(--border-soft)] px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
                 </div>
               </div>
             ))}
@@ -155,6 +159,16 @@ export function StatusPagesPage() {
           Public status pages show real-time service state for your users. Each page
           maps to a dedicated subdomain and can display the health of selected services.
         </p>
+        <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
+          <li className="flex items-start gap-2">
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
+            Click a page to edit its name, headline, and linked services.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
+            The public page is live at <code className="text-[var(--text-main)]">/status/&#123;slug&#125;</code>.
+          </li>
+        </ul>
       </section>
     </div>
   )

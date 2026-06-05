@@ -101,6 +101,7 @@ input CreateEnvironmentInput {
 
 input CreateIncidentInput {
   environmentId: String
+  monitorId: String
   ownerUserId: String
   projectId: String!
   serviceId: String
@@ -216,6 +217,7 @@ type IncidentModel {
   createdAt: DateTime!
   environmentId: String
   id: ID!
+  monitorId: String
   ownerUserId: String
   projectId: String!
   resolvedAt: DateTime
@@ -370,6 +372,8 @@ type Query {
   platformOverview: PlatformOverview!
   projects(workspaceSlug: String): [ProjectModel!]!
   services(projectSlug: String): [ServiceModel!]!
+  statusPage(id: String!): StatusPageDetailModel
+  statusPageBySlug(slug: String!): StatusPageDetailModel
   statusPages: [StatusPageModel!]!
   unreadNotificationCount: Int!
   workspaces: [WorkspaceModel!]!
@@ -413,6 +417,16 @@ input RevokeApiKeyInput {
   id: String!
 }
 
+type ServiceHealthModel {
+  displayName: String
+  id: ID!
+  latencyMs: Int
+  name: String!
+  serviceId: String!
+  sortOrder: Int!
+  status: String!
+}
+
 type ServiceModel {
   createdAt: DateTime!
   description: String
@@ -421,6 +435,19 @@ type ServiceModel {
   projectId: String!
   slug: String!
   updatedAt: DateTime!
+}
+
+type StatusPageDetailModel {
+  createdAt: DateTime!
+  headline: String
+  id: ID!
+  name: String!
+  projectId: String
+  services: [ServiceHealthModel!]!
+  slug: String!
+  updatedAt: DateTime!
+  visibility: String!
+  workspaceId: String!
 }
 
 type StatusPageModel {
