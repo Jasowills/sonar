@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sonar · Web SDK Test</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #c0c0c0; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 600; color: #eee; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #555; margin-bottom: 28px; }
+  .status-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .status-item { border: 1px solid #1a1a1a; padding: 12px 16px; min-width: 140px; }
+  .status-item .val { font-size: 20px; font-weight: 600; color: #eee; font-family: monospace; }
+  .status-item .lbl { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+  .section-title { font-size: 11px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; margin-top: 32px; }
+  .card { border: 1px solid #1a1a1a; padding: 14px 16px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .card-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .card-desc { font-size: 11px; color: #666; }
+  .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  button { background: transparent; border: 1px solid #222; color: #aaa; padding: 4px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  button:hover { border-color: #444; color: #ddd; }
+  button:disabled { opacity: 0.25; cursor: default; }
+  .result { font-size: 10px; font-family: monospace; color: #444; white-space: pre-wrap; margin-top: 4px; max-height: 100px; overflow: auto; }
+  .result.ok { color: #4ade80; }
+  .result.err { color: #f87171; }
+  .config-box { border: 1px solid #1a1a1a; padding: 16px; margin-top: 32px; }
+  .config-box label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+  .config-box input { width: 100%; background: #111; border: 1px solid #222; color: #c0c0c0; padding: 8px; font-family: monospace; font-size: 12px; margin-bottom: 12px; }
+  .green { border-color: #1a3a1a; color: #4ade80; }
+  .green:hover { border-color: #2a5a2a; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 2px; }
+  .badge.green { background: #0a1a0a; color: #4ade80; border: 1px solid #1a3a1a; }
+  .badge.red { background: #1a0a0a; color: #f87171; border: 1px solid #3a1a1a; }
+  .badge.yellow { background: #1a1a0a; color: #facc15; border: 1px solid #3a3a1a; }
+</style>
+</head>
+<body>
+<h1>SonarWeb SDK Test</h1>
+<p class="subtitle">Interactive test harness for the browser analytics SDK</p>
+
+<div class="status-row">
+  <div class="status-item"><div class="val" id="val-consent">—</div><div class="lbl">consent</div></div>
+  <div class="status-item"><div class="val" id="val-visitor">—</div><div class="lbl">visitor</div></div>
+  <div class="status-item"><div class="val" id="val-session">—</div><div class="lbl">session</div></div>
+  <div class="status-item"><div class="val" id="val-events">0</div><div class="lbl">events sent</div></div>
+</div>
+
+<div class="section-title">Track Events</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Send a custom event with the <code>track()</code> method</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="sendEvent('test_click')">Track</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Record a page view via the <code>page()</code> method</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="sendPageView()">Page View</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Set a custom visitor ID via <code>identify()</code></div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="identifyVisitor()">Identify</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Capture a DOM screenshot via <code>screenshot()</code></div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="captureScreenshot()">Screenshot</button>
+  </div>
+</div>
+
+<div class="section-title">Console Triggers</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Trigger a <code>console.error()</code> to test auto-tracking</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="triggerConsoleError()">console.error</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Trigger a <code>console.warn()</code> to test auto-tracking</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="triggerConsoleWarn()">console.warn</button>
+  </div>
+</div>
+
+<div class="section-title">Consent</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Grant consent to start/resume tracking</div></div>
+  </div>
+  <div class="card-actions">
+    <button class="green" onclick="grantConsent()">Grant</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Revoke consent to stop tracking</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="denyConsent()">Revoke</button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-left">
+    <div><div class="card-desc">Flush queued events immediately</div></div>
+  </div>
+  <div class="card-actions">
+    <button onclick="flushEvents()">Flush</button>
+  </div>
+</div>
+
+<div class="section-title">Result</div>
+<div id="result" class="result">Ready</div>
+
+<div class="config-box">
+  <label>API Key</label>
+  <input id="api-key" type="text" placeholder="wdp_..." value="__SONAR_API_KEY__" />
+  <label>Endpoint</label>
+  <input id="endpoint" type="text" value="http://localhost:8080" />
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button onclick="initSonar()" class="green" style="padding:8px 20px;font-size:13px">Initialize SonarWeb</button>
+    <button onclick="destroySonar()" style="padding:8px 20px;font-size:13px">Destroy</button>
+  </div>
+</div>
+
+<script type="module">
+  let sonar = null
+  let eventCount = 0
+
+  window.initSonar = async function() {
+    try {
+      const apiKey = document.getElementById('api-key').value.trim()
+      const endpoint = document.getElementById('endpoint').value.trim() || 'http://localhost:8080'
+
+      if (!apiKey) {
+        showResult('API key is required', true)
+        return
+      }
+
+      const { SonarWeb } = await import('/sdk/index.browser.js')
+
+      sonar = new SonarWeb({
+        apiKey,
+        endpoint,
+        autoTrack: {
+          pageViews: true,
+          linkClicks: true,
+          formSubmissions: true,
+          scrollDepth: true,
+          consoleErrors: true,
+          clickTracking: true,
+        },
+        sessionRecording: {
+          enabled: true,
+          sampleIntervalMs: 200,
+        },
+        captureScreenshots: {
+          enabled: true,
+          onError: true,
+        },
+        consent: {
+          banner: {
+            position: 'bottom',
+            text: 'This is a test page. Accept analytics tracking?',
+            acceptText: 'Allow',
+            declineText: 'Deny',
+          },
+        },
+      })
+
+      updateStatus(sonar)
+      showResult('SonarWeb initialized', false)
+
+      sonar.track('sdk_init', { version: '0.1.0' })
+      eventCount++
+      updateEventCount()
+    } catch (err) {
+      showResult(String(err), true)
+    }
+  }
+
+  window.destroySonar = function() {
+    if (sonar) {
+      sonar.destroy()
+      sonar = null
+      showResult('SonarWeb destroyed')
+      document.getElementById('val-consent').textContent = '—'
+    }
+  }
+
+  window.sendEvent = function(name) {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track(name, { timestamp: Date.now(), source: 'testing-hub' })
+    eventCount++
+    updateEventCount()
+    showResult(`Tracked: ${name}`)
+  }
+
+  window.sendPageView = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.page('test_page', { custom: true })
+    eventCount++
+    updateEventCount()
+    showResult('Page view recorded')
+  }
+
+  window.identifyVisitor = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    const vid = 'test_user_' + Date.now().toString(36)
+    sonar.identify(vid, { role: 'tester' })
+    showResult(`Identified: ${vid}`)
+    updateStatus(sonar)
+  }
+
+  window.captureScreenshot = async function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    try {
+      const data = await sonar.screenshot()
+      if (data) {
+        sonar.track('screenshot', { size: data.length })
+        eventCount++
+        updateEventCount()
+        showResult(`Screenshot captured (${data.length} chars)`)
+      } else {
+        showResult('Screenshot unavailable (html2canvas not loaded)')
+      }
+    } catch (err) {
+      showResult(String(err), true)
+    }
+  }
+
+  window.triggerConsoleError = function() {
+    console.error('Test error from testing-hub at', new Date().toISOString())
+    showResult('console.error triggered')
+  }
+
+  window.triggerConsoleWarn = function() {
+    console.warn('Test warning from testing-hub at', new Date().toISOString())
+    showResult('console.warn triggered')
+  }
+
+  window.grantConsent = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.setConsent('granted')
+    updateStatus(sonar)
+    showResult('Consent granted')
+  }
+
+  window.denyConsent = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.setConsent('denied')
+    updateStatus(sonar)
+    showResult('Consent revoked')
+  }
+
+  window.flushEvents = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track('flush_test', {})
+    showResult('Event sent (auto-flush will handle it)')
+  }
+
+  function updateStatus(s) {
+    const consent = s.getConsent ? s.getConsent() : '?'
+    document.getElementById('val-consent').textContent = consent
+    const badge = document.querySelector('#val-consent')
+    badge.className = 'val ' + (
+      consent === 'granted' ? 'badge green' : consent === 'denied' ? 'badge red' : 'badge yellow'
+    )
+  }
+
+  function updateEventCount() {
+    document.getElementById('val-events').textContent = eventCount
+  }
+
+  function showResult(msg, isErr) {
+    const el = document.getElementById('result')
+    el.className = 'result ' + (isErr ? 'err' : 'ok')
+    el.textContent = msg
+  }
+
+  // Fill API key from URL params or localStorage
+  const params = new URLSearchParams(window.location.search)
+  const key = params.get('apiKey') || localStorage.getItem('sonar_test_api_key')
+  if (key) {
+    document.getElementById('api-key').value = key
+  }
+  document.getElementById('api-key').addEventListener('input', function() {
+    localStorage.setItem('sonar_test_api_key', this.value)
+  })
+</script>
+</body>
+</html>

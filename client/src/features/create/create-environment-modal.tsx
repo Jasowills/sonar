@@ -22,12 +22,14 @@ export function CreateEnvironmentModal({ open, onClose, projectId }: Props) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !projectId) return
     const key = slugify(name.trim())
     await mutateAsync({ projectId, name: name.trim(), key })
     setName('')
     onClose()
   }
+
+  if (!projectId) return null
 
   return (
     <Modal

@@ -15,11 +15,13 @@ export function CreateProjectModal({ open, onClose, workspaceId }: Props) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !workspaceId) return
     await mutateAsync({ workspaceId, name: name.trim() })
     setName('')
     onClose()
   }
+
+  if (!workspaceId) return null
 
   return (
     <Modal

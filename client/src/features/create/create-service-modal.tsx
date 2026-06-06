@@ -15,11 +15,13 @@ export function CreateServiceModal({ open, onClose, projectId }: Props) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !projectId) return
     await mutateAsync({ projectId, name: name.trim() })
     setName('')
     onClose()
   }
+
+  if (!projectId) return null
 
   return (
     <Modal

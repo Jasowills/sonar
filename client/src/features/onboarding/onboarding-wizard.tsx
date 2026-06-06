@@ -212,10 +212,18 @@ export function OnboardingWizard({ onSkip }: Props) {
         </div>
       </div>
 
-      <CreateProjectModal open={showModal === 'project'} onClose={() => setShowModal(null)} workspaceId={workspaceId} />
-      <CreateEnvironmentModal open={showModal === 'environment'} onClose={() => setShowModal(null)} projectId={project?.id ?? ''} />
-      <CreateServiceModal open={showModal === 'service'} onClose={() => setShowModal(null)} projectId={project?.id ?? ''} />
-      <CreateMonitorModal open={showModal === 'monitor'} onClose={() => setShowModal(null)} />
+      {showModal === 'project' && workspaceId && (
+        <CreateProjectModal open onClose={() => setShowModal(null)} workspaceId={workspaceId} />
+      )}
+      {showModal === 'environment' && project?.id && (
+        <CreateEnvironmentModal open onClose={() => setShowModal(null)} projectId={project.id} />
+      )}
+      {showModal === 'service' && project?.id && (
+        <CreateServiceModal open onClose={() => setShowModal(null)} projectId={project.id} />
+      )}
+      {showModal === 'monitor' && project?.slug && (
+        <CreateMonitorModal open onClose={() => setShowModal(null)} />
+      )}
     </section>
   )
 }

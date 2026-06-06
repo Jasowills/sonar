@@ -36,19 +36,19 @@ const sections = [
     id: 'sdk',
     label: 'SDK reference',
     icon: Cpu,
-    subs: ['Node.js', 'Python', 'Go', 'Ruby'],
+    subs: ['Node.js', 'Web', 'Python', 'Go', 'Ruby'],
   },
   {
     id: 'api',
     label: 'API reference',
     icon: Terminal,
-    subs: ['Error ingestion', 'Deployments', 'Monitors', 'GraphQL'],
+    subs: ['Error ingestion', 'Deployments', 'Analytics', 'Monitors', 'Incidents', 'GraphQL'],
   },
   {
     id: 'guides',
     label: 'Guides',
     icon: BookOpen,
-    subs: ['Alert routing', 'Error grouping', 'Deploy correlation', 'Status pages'],
+    subs: ['Alert routing', 'Error grouping', 'Deploy correlation', 'Incident response', 'Status pages', 'Web analytics'],
   },
   {
     id: 'examples',
@@ -412,34 +412,91 @@ mutation UpdateMonitor {
       },
     ],
   },
+  'api-incidents': {
+    title: 'Incidents',
+    body: 'Create, resolve, and manage incidents with a full timeline of status updates. Incidents are auto-created when a monitored endpoint transitions to DOWN, with severity CRITICAL. Each incident can track its progress through identified → monitoring → resolved stages.',
+    code: `# Query incidents
+query ListIncidents {
+  incidents {
+    id title summary severity status startedAt resolvedAt
+    workspaceId projectId serviceId monitorId
+  }
+}
+
+# Create an incident
+mutation CreateIncident {
+  createIncident(input: {
+    title: "API Latency Spike"
+    severity: "HIGH"
+    summary: "p95 response time exceeded 5s"
+    workspaceId: "ws_xxx"
+    projectId: "proj_xxx"
+    serviceId: "svc_xxx"
+  }) { id title severity status }
+}
+
+# Resolve an incident
+mutation ResolveIncident {
+  resolveIncident(input: {
+    id: "inc_xxx"
+    summary: "Rolled back to v1.2.0 — latency returned to baseline"
+  }) { id status resolvedAt summary }
+}
+
+# Add a timeline update
+mutation AddUpdate {
+  addIncidentUpdate(input: {
+    incidentId: "inc_xxx"
+    kind: "identified"
+    body: "Root cause identified as a misconfigured connection pool in the payments service."
+  }) { id kind body createdAt }
+}`,
+    sections: [
+      {
+        heading: 'Incident updates',
+        text: 'Each update has a kind field: created (auto-generated when the incident opens), identified (root cause found), monitoring (fix deployed, watching metrics), note (general status), or resolved (incident closed). Updates form a chronological timeline on the incident detail page.',
+      },
+      {
+        heading: 'Auto-creation from monitors',
+        text: 'When the checker detects a monitor transition from HEALTHY to DOWN, an incident is auto-created with severity CRITICAL and linked to the monitor via monitorId. If the monitor recovers and later goes down again, a new incident is created only after the previous one has been resolved.',
+      },
+    ],
+  },
   'api-graphql': {
     title: 'GraphQL API',
     body: 'Every dashboard view is backed by a single GraphQL endpoint at /graphql. Authenticate with the same Bearer token. The schema is fully introspectable and includes queries, mutations, and subscriptions.',
     code: `# Full dashboard snapshot
 query Overview($workspaceSlug: String) {
   overviewSnapshot(workspaceSlug: "my-workspace") {
-    workspaceName
-    projectName
-    productionMonitorCount
-    monitors {
-      name targetUrl latestState latestLatencyMs
-    }
+    workspaceName projectName productionMonitorCount
+    monitors { name targetUrl latestState latestLatencyMs }
     metrics { label value detail }
   }
 }
 
-# List error groups
-query Errors($projectSlug: String, $limit: Int) {
-  errorGroups(projectSlug: $projectSlug, limit: 20) {
-    id fingerprint title status occurrenceCount
-    environmentName serviceName firstSeenAt lastSeenAt
+# Incidents with timeline updates
+query IncidentsWithUpdates($incidentId: String!) {
+  incidents { id title severity status startedAt resolvedAt }
+  incidentUpdates(incidentId: $incidentId) {
+    id kind body createdAt actorUserId
   }
 }
 
-# Deployments with environment details
-query Deployments($projectSlug: String, $limit: Int) {
-  deployments(projectSlug: $projectSlug, limit: 10) {
-    version status description deployedBy deployedAt
+# Status page with live service health
+query StatusPage($slug: String!) {
+  statusPageBySlug(slug: $slug) {
+    id name slug headline visibility
+    services { id name displayName status latencyMs sortOrder }
+  }
+}
+
+# Monitors and error groups
+query Monitors($projectSlug: String) {
+  monitors(projectSlug: $projectSlug) {
+    id name targetUrl latestState latestLatencyMs isActive
+  }
+  errorGroups(projectSlug: $projectSlug, limit: 20) {
+    id fingerprint title status occurrenceCount
     environmentName serviceName
   }
 }`,
@@ -513,6 +570,39 @@ wd.captureError(err, {
       },
     ],
   },
+  'guides-incident-response': {
+    title: 'Incident response',
+    body: 'Sonar provides a complete incident lifecycle — auto-creation from monitor failures, a timeline of status updates, and resolution tracking. Every incident can evolve through stages as your team investigates and fixes the issue.',
+    code: `# Typical incident response flow:
+
+1. Monitor goes DOWN → Incident auto-created (severity CRITICAL)
+2. Team acknowledges → Add "identified" update with root cause
+3. Fix deployed → Add "monitoring" update
+4. Metrics recovered → Resolve incident with summary
+
+# Add a status update
+mutation AddUpdate {
+  addIncidentUpdate(input: {
+    incidentId: "inc_xxx"
+    kind: "monitoring"
+    body: "Deployed connection pool fix to all instances. Monitoring p95 latency."
+  }) { id kind body createdAt }
+}`,
+    sections: [
+      {
+        heading: 'Incident timeline',
+        text: 'Each incident starts with an initial "created" entry containing the summary. Team members then add updates with kind: identified (root cause found), monitoring (fix deployed, watching metrics), or note (general progress). Every update is timestamped and displayed chronologically on the incident detail page.',
+      },
+      {
+        heading: 'Resolution',
+        text: 'When the issue is resolved, click "Resolve" on the detail page. Optionally add a resolution summary that replaces the incident summary. Resolved incidents are marked green and excluded from the "Open" filter tab. The resolver event is broadcast via SSE to all workspace members.',
+      },
+      {
+        heading: 'Auto-creation',
+        text: 'When the checker service detects a monitor transitioning from HEALTHY to DOWN, it creates an incident with severity CRITICAL linked to the monitor. If the same monitor already has an OPEN incident, no duplicate is created — the existing incident remains active until resolved.',
+      },
+    ],
+  },
   'guides-deploy-correlation': {
     title: 'Deploy correlation',
     body: 'Every release appears on the same timeline as your incidents and latency data. When a deploy precedes an incident, Sonar surfaces the correlation so you can quickly identify whether a rollout caused the issue.',
@@ -541,29 +631,53 @@ wd.captureError(err, {
   },
   'guides-status-pages': {
     title: 'Status pages',
-    body: 'Create public status pages to communicate real-time service health with your users. Each status page maps to a unique slug and can display the state of selected services. Status pages inherit the same monochrome visual language as the dashboard.',
+    body: 'Create public status pages to communicate real-time service health with your users. Each status page maps to a unique slug, displays live health of linked services, and is available without authentication.',
     code: `# Create a status page
 mutation CreateStatusPage {
   createStatusPage(input: {
     name: "API Status"
-    slug: "api-status"
-    visibility: "PUBLIC"
+    headline: "Current status of the Example API"
     workspaceId: "ws_xxx"
   }) { id name slug }
 }
 
-# Link services to the status page
-mutation LinkService {
-  createStatusPageService(input: {
+# Update name / headline / visibility
+mutation UpdatePage {
+  updateStatusPage(input: {
+    id: "sp_xxx"
+    name: "Example API Status"
+    visibility: "PUBLIC"
+  }) { id name visibility }
+}
+
+# Add a service with custom display name
+mutation AddService {
+  addStatusPageService(input: {
     statusPageId: "sp_xxx"
     serviceId: "svc_xxx"
-    displayName: "Public API"
-  }) { id displayName }
+    displayName: "Payment API"
+  })
+}
+
+# Remove a service
+mutation RemoveService {
+  removeStatusPageService(input: {
+    statusPageId: "sp_xxx"
+    serviceId: "svc_xxx"
+  })
 }`,
     sections: [
       {
-        heading: 'Visibility modes',
-        text: 'PUBLIC pages are accessible without authentication at https://your-slug.sonar.app. PRIVATE pages require a shared token. Use private pages for internal stakeholder communication during incidents.',
+        heading: 'Live service health',
+        text: 'Each linked service displays its current status based on the latest monitor check. Status is computed as operational (all monitors healthy), degraded (any monitor DEGRADED), or outage (any monitor DOWN). Latency from the latest check is shown alongside each service.',
+      },
+      {
+        heading: 'Public endpoint',
+        text: 'The public page is served at GET /status/:slug and returns JSON. No authentication is required. The JSON response includes page info, an overall status string (operational / partial_outage / major_outage), and per-service health. Use this endpoint to feed external status badges or monitoring tools.',
+      },
+      {
+        heading: 'Service management',
+        text: 'From the detail page at /app/status-pages/:id, you can add or remove linked services. Each service gets a display name override and sort order. Only services in the same project as the status page can be linked.',
       },
     ],
   },
@@ -738,6 +852,115 @@ curl -s -X POST https://api.sonar.app/ingest/deployments \\
     "status": "SUCCEEDED",
     "deployedBy": "curl"
   }'`,
+  },
+  'sdk-web': {
+    title: 'Web SDK',
+    body: 'The Sonar Web SDK captures page views, clicks, scrolls, form submissions, console errors, and session recordings directly from the browser — with GDPR-friendly cookie consent built in.',
+    code: `import { SonarWeb } from '@sonar/sdk/browser'
+
+const sonar = new SonarWeb({
+  apiKey: 'wdp_xxxx_yyyy',
+  endpoint: 'https://api.sonar.app',
+  autoTrack: {
+    pageViews: true,
+    linkClicks: true,
+    formSubmissions: true,
+    scrollDepth: true,
+    consoleErrors: true,
+  },
+  consent: {
+    banner: {
+      position: 'bottom',
+      text: 'We use analytics to improve your experience.',
+    },
+  },
+})
+
+// Manual tracking
+sonar.page('Homepage', { referrer: document.referrer })
+sonar.track('trial_started', { plan: 'pro' })
+sonar.identify('visitor_123', { role: 'admin' })
+
+// Check consent
+if (sonar.getConsent() === 'granted') {
+  console.log('Tracking active')
+}`,
+    sections: [
+      {
+        heading: 'Installation',
+        text: 'The Web SDK is included in the @sonar/sdk package. Use the /browser subpath to import it. In a module-based setup, import { SonarWeb } from "@sonar/sdk/browser". The bundler resolves the browser entry automatically for web projects.',
+      },
+      {
+        heading: 'Auto-tracking',
+        text: 'The SDK can automatically track page views (including SPA route changes via pushState/popstate interception), link clicks, form submissions, scroll depth (25/50/75/100%), and console errors. Each feature can be individually enabled or disabled via the autoTrack option.',
+      },
+      {
+        heading: 'Consent management',
+        text: 'By default, no tracking starts until the visitor grants consent. The SDK respects the browser Do Not Track and Global Privacy Control signals. A built-in consent banner is shown when consent is pending. Call sonar.setConsent("granted") or sonar.setConsent("denied") programmatically.',
+      },
+      {
+        heading: 'Event types',
+        text: 'Standard event types include page_view, click, scroll, form_submit, console_error, and custom. Session recording events (recording_mouse, recording_click, recording_scroll) are batched separately. Events are flushed every 5 seconds or when the buffer reaches 50 items.',
+      },
+    ],
+  },
+  'api-analytics': {
+    title: 'Analytics ingestion',
+    body: 'Send analytics events to Sonar from the browser SDK or any HTTP client. Events are batched and ingested via a single REST endpoint. Each event is tagged with a session and visitor ID for session replay analysis.',
+    code: `POST /ingest/analytics
+Content-Type: application/json
+Authorization: Bearer <api-key>
+
+{
+  "events": [
+    {
+      "type": "page_view",
+      "url": "https://example.com/pricing",
+      "referrer": "https://google.com",
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "sessionId": "ses_xxx",
+      "visitorId": "vis_xxx",
+      "timestamp": "2026-06-06T12:00:00.000Z"
+    }
+  ],
+  "session": {
+    "visitorId": "vis_xxx",
+    "startUrl": "https://example.com",
+    "referrer": "https://google.com",
+    "userAgent": "Mozilla/5.0 ...",
+    "pageViews": 1,
+    "isBounce": true
+  }
+}`,
+    sections: [
+      {
+        heading: 'Event types',
+        text: 'The type field accepts: page_view, click, scroll, form_submit, screenshot, console_error, and custom. The category field further qualifies the event (auto, manual, error, link, form, scroll).',
+      },
+      {
+        heading: 'Session management',
+        text: 'Sessions are identified by sessionId. The optional session object in the request body is upserted — existing sessions are updated with new page view and event counts, while new sessions are created. A session is considered a bounce if it has only one page view and no subsequent events.',
+      },
+    ],
+  },
+  'guides-web-analytics': {
+    title: 'Web analytics',
+    body: 'A step-by-step guide to adding Sonar web analytics to your site, from script tag installation to advanced session recording.',
+    sections: [
+      {
+        heading: 'Script tag installation',
+        text: 'For simple websites, add the SDK via a script tag: <script type="module"> import { SonarWeb } from "https://cdn.sonar.app/sdk/latest/index.browser.js". Initialize after the DOM is ready with your API key and configuration.',
+      },
+      {
+        heading: 'Framework integration',
+        text: 'For React, Vue, or Angular apps, install @sonar/sdk as a dependency. Import SonarWeb from "@sonar/sdk/browser" and initialize it in your app entry point (e.g., main.tsx or App.tsx). The auto-tracking module will automatically intercept pushState calls for SPA route changes.',
+      },
+      {
+        heading: 'Understanding the dashboard',
+        text: 'The Analytics dashboard shows page views over time, unique visitors, bounce rate, average session duration, top pages, and traffic sources. Click through to individual sessions to see the full event timeline with metadata.',
+      },
+    ],
   },
 }
 

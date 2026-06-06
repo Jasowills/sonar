@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { monitorRouter } from './routes/monitor-routes.js'
@@ -13,8 +13,17 @@ const PORT = parseInt(process.env.PORT ?? '3001', 10)
 const app = express()
 app.use(express.json())
 
+const SDK_DIST = resolve(__dirname, '../../packages/sdk/dist')
+app.use('/sdk', express.static(SDK_DIST, { extensions: ['js'] }))
+
 app.get('/', (_req, res) => {
   const html = readFileSync(join(__dirname, 'public', 'index.html'), 'utf-8')
+  res.type('html').send(html)
+})
+
+app.get('/analytics', (_req, res) => {
+  let html = readFileSync(join(__dirname, 'public', 'analytics.html'), 'utf-8')
+  html = html.replace('__SONAR_API_KEY__', process.env.SONAR_API_KEY ?? '')
   res.type('html').send(html)
 })
 
@@ -33,6 +42,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 app.listen(PORT, async () => {
   console.log(`\n  ── testing-hub ──`)
   console.log(`  web UI         → http://localhost:${PORT}`)
+  console.log(`  analytics test  → http://localhost:${PORT}/analytics`)
   console.log(`  monitor urls   → http://localhost:${PORT}/api/*`)
   console.log(`  status pages   → http://localhost:${PORT}/api/status*`)
   console.log(`  trigger urls   → http://localhost:${PORT}/trigger/*`)

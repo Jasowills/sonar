@@ -44,6 +44,67 @@ type AlertRuleModel {
   workspaceId: String!
 }
 
+type AnalyticsEventModel {
+  category: String
+  fingerprint: String
+  id: String!
+  name: String
+  payload: String
+  projectId: String!
+  referrer: String
+  screenHeight: Int
+  screenWidth: Int
+  sessionId: String
+  severity: Float
+  timestamp: DateTime!
+  type: String!
+  url: String!
+  userAgent: String
+  viewportHeight: Int
+  viewportWidth: Int
+  visitorId: String
+}
+
+type AnalyticsOverviewResult {
+  avgSessionDuration: Int
+  bounceRate: Float!
+  topPages: [TopPageResult!]!
+  totalPageViews: Int!
+  uniqueVisitors: Int!
+}
+
+type AnalyticsSessionModel {
+  activeTime: Int
+  browser: String
+  country: String
+  crashDetected: Boolean!
+  device: String
+  duration: Int
+  economicImpact: Float
+  eventCount: Int!
+  frustrationScore: Int
+  hasErrors: Boolean!
+  hasFormInteraction: Boolean!
+  hasFrustrationSignals: Boolean!
+  id: String!
+  interestingnessScore: Int
+  ip: String
+  isBounce: Boolean!
+  lastActivityAt: DateTime!
+  os: String
+  pageViews: Int!
+  projectId: String!
+  referrer: String
+  startUrl: String!
+  startedAt: DateTime!
+  totalDeadClicks: Int!
+  totalErrors: Int!
+  totalRageClicks: Int!
+  userAgent: String
+  userIntent: String
+  visitorId: String
+}
+
 type ApiKeyModel {
   createdAt: DateTime!
   expiresAt: String
@@ -213,6 +274,11 @@ enum ErrorGroupStatus {
   RESOLVED
 }
 
+type EventTypeDistResult {
+  count: Int!
+  type: String!
+}
+
 type IncidentModel {
   createdAt: DateTime!
   environmentId: String
@@ -338,6 +404,11 @@ type OverviewSnapshotModel {
   workspaceName: String!
 }
 
+type PageViewTimeSeriesPoint {
+  count: Int!
+  date: String!
+}
+
 type PlatformOverview {
   checkedAt: String!
   graphPath: String!
@@ -358,6 +429,14 @@ type ProjectModel {
 type Query {
   alertChannels: [AlertChannelModel!]!
   alertRules: [AlertRuleModel!]!
+  analyticsEventTypes(projectId: String!): [EventTypeDistResult!]!
+  analyticsOverview(projectId: String!): AnalyticsOverviewResult!
+  analyticsPageViews(from: String, projectId: String!, to: String): [PageViewTimeSeriesPoint!]!
+  analyticsSession(id: String!): AnalyticsSessionModel
+  analyticsSessionEvents(sessionId: String!): [AnalyticsEventModel!]!
+  analyticsSessions(limit: Int, projectId: String!): [AnalyticsSessionModel!]!
+  analyticsSources(projectId: String!): [SourceResult!]!
+  analyticsTopPages(limit: Int, projectId: String!): [TopPageResult!]!
   apiKeys(projectId: String!): [ApiKeyModel!]!
   deployments(environmentKey: String, limit: Int, projectSlug: String): [DeploymentModel!]!
   environments(projectSlug: String): [EnvironmentModel!]!
@@ -437,6 +516,11 @@ type ServiceModel {
   updatedAt: DateTime!
 }
 
+type SourceResult {
+  count: Int!
+  referrer: String!
+}
+
 type StatusPageDetailModel {
   createdAt: DateTime!
   headline: String
@@ -460,6 +544,12 @@ type StatusPageModel {
   updatedAt: DateTime!
   visibility: String!
   workspaceId: String!
+}
+
+type TopPageResult {
+  uniqueVisitors: Int!
+  url: String!
+  views: Int!
 }
 
 input UpdateAlertChannelInput {

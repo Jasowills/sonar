@@ -6,6 +6,9 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import { EventProvider } from '@/lib/event-source'
 import { ToastProvider } from '@/lib/toast-store'
 import { AlertsPage } from '@/pages/alerts-page'
+import { AnalyticsPage } from '@/pages/analytics-page'
+import { AnalyticsSessionsPage } from '@/pages/analytics-sessions-page'
+import { AnalyticsSessionDetailPage } from '@/pages/analytics-session-detail-page'
 import { AuthCallbackPage } from '@/pages/auth-callback-page'
 import { DashboardPage } from '@/pages/dashboard-page'
 import { DeploymentsPage } from '@/pages/deployments-page'
@@ -49,6 +52,16 @@ const pageMeta: Record<string, { title: string; eyebrow: string; description: st
     title: 'Errors',
     eyebrow: 'Errors',
     description: 'Grouped error events ingested from your services.',
+  },
+  '/app/analytics': {
+    title: 'Analytics',
+    eyebrow: 'Monitoring',
+    description: 'Page views, sessions, and event data from your web SDK.',
+  },
+  '/app/analytics/sessions': {
+    title: 'Sessions',
+    eyebrow: 'Monitoring',
+    description: 'Visitor sessions with event timelines.',
   },
   '/app/incidents': {
     title: 'Incidents',
@@ -230,6 +243,9 @@ function AppContent() {
       <Routes>
         <Route path="/app/dashboard" element={<DashboardPage />} />
         <Route path="/app/monitors" element={<MonitorsPage />} />
+        <Route path="/app/analytics" element={<AnalyticsPage />} />
+        <Route path="/app/analytics/sessions" element={<AnalyticsSessionsPage />} />
+        <Route path="/app/analytics/sessions/:id" element={<AnalyticsSessionDetailPage />} />
         <Route path="/app/errors" element={<ErrorsPage />} />
         <Route path="/app/incidents" element={<IncidentsPage />} />
         <Route path="/app/incidents/:id" element={<IncidentDetailPage />} />

@@ -193,16 +193,20 @@ export function CreateMonitorModal({ open, onClose, monitor }: Props) {
         </Field>
       </Modal>
 
-      <CreateServiceModal
-        open={showCreateService}
-        onClose={() => setShowCreateService(false)}
-        projectId={project?.id ?? ''}
-      />
-      <CreateEnvironmentModal
-        open={showCreateEnvironment}
-        onClose={() => setShowCreateEnvironment(false)}
-        projectId={project?.id ?? ''}
-      />
+      {project?.id && (
+        <CreateServiceModal
+          open={showCreateService}
+          onClose={() => setShowCreateService(false)}
+          projectId={project.id}
+        />
+      )}
+      {project?.id && (
+        <CreateEnvironmentModal
+          open={showCreateEnvironment}
+          onClose={() => setShowCreateEnvironment(false)}
+          projectId={project.id}
+        />
+      )}
     </>
   )
 }

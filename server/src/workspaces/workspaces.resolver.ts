@@ -1,5 +1,8 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { UnauthorizedException } from '@nestjs/common';
 
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/jwt';
 import { WorkspaceModel } from './models/workspace.model';
 import {
   CreateWorkspaceInput,
@@ -12,8 +15,8 @@ export class WorkspacesResolver {
   constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Query(() => [WorkspaceModel])
-  workspaces(): Promise<WorkspaceModel[]> {
-    return this.workspacesService.findAll();
+  workspaces(@CurrentUser() user: AuthenticatedUser | null): Promise<WorkspaceModel[]> {
+    return this.workspacesService.findAll(user?.sub);
   }
 
   @Mutation(() => WorkspaceModel)
@@ -31,7 +34,11 @@ export class WorkspacesResolver {
   }
 
   @Mutation(() => Boolean)
-  deleteWorkspace(@Args('id') id: string): Promise<boolean> {
-    return this.workspacesService.remove(id);
+  async deleteWorkspace(
+    @Args('id') id: string,
+    @CurrentUser() user: AuthenticatedUser | null,
+  ): Promise<boolean> {
+    if (!user) throw new UnauthorizedException();
+    return this.workspacesService.remove(id, user.sub);
   }
 }

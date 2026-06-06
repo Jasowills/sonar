@@ -71,8 +71,10 @@ model Project {
   incidents     Incident[]
   errorGroups   ErrorGroup[]
   alertRules    AlertRule[]
-  statusPages   StatusPage[]
-  apiKeys       ApiKey[]
+    statusPages    StatusPage[]
+    apiKeys        ApiKey[]
+    analyticsEvents  AnalyticsEvent[]
+    analyticsSessions AnalyticsSession[]
 }
 
 model Environment {
@@ -321,4 +323,73 @@ model Notification {
   workspace  Workspace   @relation(fields: [workspaceId], references: [id])
 
   @@index([userId, read, createdAt])
+}
+
+model AnalyticsEvent {
+  id              String       @id @default(cuid()) @map("_id")
+  type            String       // page_view, click, scroll, form_submit, screenshot, custom, console_error, frustration_*
+  category        String?
+  name            String?
+  url             String
+  referrer        String?
+  userAgent       String?
+  viewportWidth   Int?
+  viewportHeight  Int?
+  screenWidth     Int?
+  screenHeight    Int?
+  payload         Json?
+  projectId       String
+  sessionId       String?
+  visitorId       String?
+  consentGranted  Boolean      @default(false)
+  severity        Float?
+  fingerprint     String?
+  timestamp       DateTime
+  project         Project      @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, timestamp])
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([type, severity])
+}
+
+model AnalyticsSession {
+  id                    String       @id @default(cuid()) @map("_id")
+  sessionKey            String?
+  visitorId             String?
+  projectId             String
+  startUrl              String
+  referrer              String?
+  userAgent             String?
+  ip                    String?
+  country               String?
+  pageViews             Int          @default(1)
+  eventCount            Int          @default(0)
+  duration              Int?
+  isBounce              Boolean      @default(true)
+  startedAt             DateTime
+  lastActivityAt        DateTime
+
+  // Intelligence fields
+  frustrationScore     Int?
+  interestingnessScore Int?
+  userIntent           String?
+  economicImpact       Float?
+  hasFrustrationSignals Boolean     @default(false)
+  hasFormInteraction    Boolean     @default(false)
+  hasErrors             Boolean     @default(false)
+  totalErrors           Int         @default(0)
+  totalRageClicks       Int         @default(0)
+  totalDeadClicks       Int         @default(0)
+  browser               String?
+  os                    String?
+  device                String?
+  activeTime            Int?
+  crashDetected         Boolean     @default(false)
+
+  project              Project      @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, startedAt])
+  @@index([frustrationScore])
+  @@index([hasFrustrationSignals])
 }

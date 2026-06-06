@@ -8,8 +8,8 @@ import {
   useAddStatusPageService,
   useRemoveStatusPageService,
   useServices,
-  useSelectedProject,
 } from '@/lib/api'
+import { useSelectedProject } from '@/hooks/use-selected-project'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   HEALTHY: { label: 'Operational', color: '#22c55e' },

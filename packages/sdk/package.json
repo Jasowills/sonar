@@ -1,7 +1,7 @@
 {
   "name": "@sonar/sdk",
   "version": "0.1.0",
-  "description": "Sonar SDK — error capture, deploy tracking, and uptime monitoring for your Node.js services.",
+  "description": "Sonar SDK — error capture, deploy tracking, uptime monitoring, and web analytics.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -9,8 +9,16 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "browser": {
+        "import": "./dist/index.browser.js",
+        "types": "./dist/index.browser.d.ts"
+      },
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./browser": {
+      "import": "./dist/index.browser.js",
+      "types": "./dist/index.browser.d.ts"
     }
   },
   "files": [
@@ -20,7 +28,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.browser.json",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit"
   },
@@ -29,6 +37,7 @@
     "observability",
     "monitoring",
     "errors",
+    "web-analytics",
     "sdk"
   ],
   "devDependencies": {

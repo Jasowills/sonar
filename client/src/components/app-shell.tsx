@@ -169,6 +169,15 @@ export function AppShell({
   useEffect(() => {
     if (!lastEvent) return
     console.log(`[SSE] AppShell handling type=${lastEvent.type}`, lastEvent.data)
+    if (lastEvent.type === 'analytics_ingested') {
+      console.log('[SSE] invalidating analytics queries')
+      queryClient.invalidateQueries({ queryKey: ['analyticsOverview'] })
+      queryClient.invalidateQueries({ queryKey: ['analyticsPageViews'] })
+      queryClient.invalidateQueries({ queryKey: ['analyticsSessions'] })
+      queryClient.invalidateQueries({ queryKey: ['analyticsTopPages'] })
+      queryClient.invalidateQueries({ queryKey: ['analyticsSources'] })
+      queryClient.invalidateQueries({ queryKey: ['analyticsEventTypes'] })
+    }
     if (lastEvent.type === 'error_created') {
       console.log('[SSE] invalidating errorGroups + overviewSnapshot')
       queryClient.invalidateQueries({ queryKey: ['errorGroups'] })

@@ -93,7 +93,7 @@ function ProfileSection() {
 }
 
 function WorkspaceSection() {
-  const { data: workspaces } = useWorkspaces()
+  const { data: workspaces, isLoading, isError, error } = useWorkspaces()
   const workspace = workspaces?.[0]
   const { mutateAsync: updateWorkspace, isPending: updating } =
     useUpdateWorkspace()
@@ -110,6 +110,24 @@ function WorkspaceSection() {
   const handleCancel = () => {
     setName(workspace?.name ?? '')
     setEditing(false)
+  }
+
+  if (isLoading) {
+    return (
+      <Section title="Workspace" description="Your current workspace" icon={Key}>
+        <p className="text-sm text-[var(--text-muted)]">Loading workspace…</p>
+      </Section>
+    )
+  }
+
+  if (isError) {
+    return (
+      <Section title="Workspace" description="Your current workspace" icon={Key}>
+        <p className="text-sm text-[var(--dot-down)]">
+          Failed to load workspace: {error instanceof Error ? error.message : 'Connection error'}
+        </p>
+      </Section>
+    )
   }
 
   if (!workspace) {

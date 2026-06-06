@@ -7,6 +7,7 @@ import Lenis from 'lenis'
 import {
   Activity,
   ArrowRight,
+  BarChart3,
   BellRing,
   Check,
   LifeBuoy,
@@ -30,6 +31,7 @@ const sectionEyebrow =
 const marqueeItems = [
   'Uptime monitoring',
   'Error tracing',
+  'Web analytics',
   'Alert routing',
   'Incident timelines',
   'Status pages',
@@ -37,9 +39,9 @@ const marqueeItems = [
 ]
 
 const stats = [
-  { to: '5', decimals: 0, suffix: '', label: 'signals unified on one surface' },
-  { to: '30', decimals: 0, suffix: 's', label: 'default check cadence, tunable per monitor' },
-  { to: '3', decimals: 0, suffix: '', label: 'environments modelled from the first build' },
+  { to: '8', decimals: 0, suffix: '', label: 'signals unified on one surface' },
+  { to: '10', decimals: 0, suffix: 'K', label: 'analytics events per session tracked' },
+  { to: '0', decimals: 0, suffix: '', label: 'third-party scripts loaded on your site' },
 ]
 
 const features = [
@@ -83,7 +85,14 @@ const features = [
     num: '06',
     title: 'Deploy correlation',
     desc: 'Every release lands on the same timeline as your incidents and latency — so root-cause starts with a fact, not a guess.',
-    span: 'lg:col-span-6',
+    span: 'lg:col-span-3',
+  },
+  {
+    icon: BarChart3,
+    num: '07',
+    title: 'Web analytics',
+    desc: 'Page views, clicks, scrolls, and session recording built into every project — with GDPR-friendly consent baked in.',
+    span: 'lg:col-span-3',
   },
 ]
 
@@ -130,6 +139,13 @@ function Nav({ onNavigate }: { onNavigate: (target: string) => void }) {
             className="transition-colors hover:text-[var(--text-main)]"
           >
             How it works
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('#analytics')}
+            className="transition-colors hover:text-[var(--text-main)]"
+          >
+            Web analytics
           </button>
           <button
             type="button"
@@ -190,9 +206,9 @@ function Hero({ onNavigate }: { onNavigate: (target: string) => void }) {
           data-hero-item
           className="mx-auto mt-6 max-w-xl text-base leading-7 text-[var(--text-muted)] lg:text-lg"
         >
-          Sonar unifies uptime checks, error tracing, alerting, and incident
-          response on one quiet operational surface — so a three-person team can
-          run like a platform org.
+          Sonar unifies uptime checks, error tracing, web analytics, alerting,
+          and incident response on one quiet operational surface — so a
+          three-person team can run like a platform org.
         </p>
 
         <div
@@ -275,7 +291,7 @@ function Features() {
         <div data-reveal className="max-w-2xl">
           <p className={sectionEyebrow}>Product</p>
           <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-[var(--text-main)]">
-            Five signals teams usually buy separately. One surface.
+            The signals your stack needs. One surface.
           </h2>
         </div>
 
@@ -461,6 +477,115 @@ function FinalCta() {
   )
 }
 
+function AnalyticsSpotlight() {
+  const points = [
+    'One SDK tag — page views, clicks, scrolls, and form submissions out of the box',
+    'Session recording replays the exact user flow, no extra instrumentation',
+    'Built-in GDPR consent banner with DNT and Global Privacy Control detection',
+    'Zero third-party scripts — every event stays inside your infrastructure',
+  ]
+
+  return (
+    <section id="analytics" className="border-t border-[var(--border-soft)] px-5 py-24 lg:px-8 lg:py-32">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div data-reveal className="order-2 lg:order-1">
+          <p className={sectionEyebrow}>Web analytics</p>
+          <h2 className="mt-4 text-[clamp(2rem,4vw,3.2rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-[var(--text-main)]">
+            Who visits, what they do,
+            <br />
+            <span className="text-[var(--text-muted)]">and whether they stay.</span>
+          </h2>
+          <p className="mt-5 max-w-md text-base leading-7 text-[var(--text-muted)]">
+            Page views, click maps, scroll depth, form analytics, and session
+            recordings — all captured by the same first-party SDK that powers
+            your error tracing. No Google tag, no third-party scripts, no
+            cookie banners.
+          </p>
+          <ul className="mt-8 space-y-3.5">
+            {points.map((point) => (
+              <li
+                key={point}
+                className="flex items-start gap-3 text-sm leading-6 text-[var(--text-muted)]"
+              >
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-main)]" />
+                {point}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div
+          data-reveal
+          className="order-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-panel)] p-7 lg:order-2 lg:p-8"
+        >
+          <p className="font-[var(--font-mono)] text-[0.62rem] uppercase tracking-[0.16em] text-[var(--text-muted)]">
+            Analytics · last 7 days
+          </p>
+
+          <div className="mt-7 space-y-5">
+            {[
+              { label: '/pricing', visitors: 1247, change: '+12%' },
+              { label: '/docs/getting-started', visitors: 893, change: '+34%' },
+              { label: '/blog/new-release', visitors: 654, change: '+8%' },
+              { label: '/login', visitors: 523, change: '-3%' },
+              { label: '/features', visitors: 412, change: '+21%' },
+            ].map((page, i) => {
+              const width = Math.max(20, (page.visitors / 1247) * 100)
+              const isUp = page.change.startsWith('+')
+              return (
+                <div key={i}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-[var(--font-mono)] text-xs text-[var(--text-main)]">
+                      {page.label}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-xs">
+                      <span className="font-semibold text-[var(--text-main)]">
+                        {page.visitors.toLocaleString()}
+                      </span>
+                      <span
+                        className={
+                          isUp
+                            ? 'text-[oklch(0.62_0.14_152)]'
+                            : 'text-[oklch(0.62_0.18_28)]'
+                        }
+                      >
+                        {page.change}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--surface-page)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--text-main)] transition-all duration-700"
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-7 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--border-soft)]">
+            {[
+              { value: '4.2K', label: 'Sessions' },
+              { value: '16.3K', label: 'Page views' },
+              { value: '3m12s', label: 'Avg. duration' },
+            ].map((m) => (
+              <div key={m.label} className="bg-[var(--surface-page)] p-4 text-center">
+                <p className="text-sm font-semibold text-[var(--text-main)]">
+                  {m.value}
+                </p>
+                <p className="mt-0.5 text-[0.65rem] text-[var(--text-muted)]">
+                  {m.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function Footer({ onNavigate }: { onNavigate: (target: string) => void }) {
   return (
     <footer className="border-t border-[var(--border-soft)] px-5 py-16 lg:px-8">
@@ -497,6 +622,13 @@ function Footer({ onNavigate }: { onNavigate: (target: string) => void }) {
               className="text-left transition-colors hover:text-[var(--text-main)]"
             >
               How it works
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('#analytics')}
+              className="text-left transition-colors hover:text-[var(--text-main)]"
+            >
+              Web analytics
             </button>
             <button
               type="button"
@@ -721,6 +853,7 @@ export function LandingPage() {
         <StatBand />
         <Features />
         <Steps />
+        <AnalyticsSpotlight />
         <DeploySpotlight />
         <FinalCta />
       </main>

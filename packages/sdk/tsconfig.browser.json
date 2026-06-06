@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/browser", "src/index.browser.ts", "src/client.ts", "src/types.ts"],
+  "compilerOptions": {
+    "types": [],
+    "lib": ["ES2022", "DOM"]
+  }
+}

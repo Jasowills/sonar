@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
-import { AlertTriangle, LifeBuoy, Plus, ExternalLink } from 'lucide-react'
+import { AlertTriangle, LifeBuoy, Plus, ExternalLink, Settings } from 'lucide-react'
 import { useStatusPages, useCreateStatusPage, useWorkspaces } from '@/lib/api'
 
 export function StatusPagesPage() {

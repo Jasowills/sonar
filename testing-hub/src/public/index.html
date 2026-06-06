@@ -182,6 +182,7 @@ function render(ok) {
     var el = document.getElementById('val-version')
     if (el) el.textContent = d.version || '-'
     SDK.environmentKey = d.environmentKey || SDK.environmentKey
+    SDK.apiKey = d.apiKeyPrefix || SDK.apiKey
   }).catch(function() {})
 }
 

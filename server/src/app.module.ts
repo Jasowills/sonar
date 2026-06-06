@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { AppController } from './app.controller';
@@ -60,6 +62,8 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     MonitorsModule,
     DeploymentsModule,
     ErrorsModule,
+    CloudinaryModule,
+    AnalyticsModule,
     EventsModule,
     EmailModule,
     NotificationsModule,

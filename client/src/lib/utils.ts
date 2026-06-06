@@ -32,6 +32,7 @@ type GraphQlError = {
 }
 
 export function parseGraphqlError(err: unknown): string[] {
+  if (!err) return []
   const clientError = err as
     | { response?: { errors?: GraphQlError[] } }
     | undefined

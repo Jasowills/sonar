@@ -1915,3 +1915,323 @@ export function useMembers(workspaceId: string) {
     enabled: !!workspaceId,
   })
 }
+
+// --- Analytics --------------------------------------------------------------
+
+export type AnalyticsOverview = {
+  totalPageViews: number
+  uniqueVisitors: number
+  bounceRate: number
+  avgSessionDuration: number | null
+  topPages: Array<{ url: string; views: number; uniqueVisitors: number }>
+}
+
+export type PageViewTimeSeriesPoint = {
+  date: string
+  count: number
+}
+
+export type AnalyticsSession = {
+  id: string
+  visitorId: string | null
+  projectId: string
+  startUrl: string
+  referrer: string | null
+  userAgent: string | null
+  ip: string | null
+  country: string | null
+  pageViews: number
+  eventCount: number
+  duration: number | null
+  isBounce: boolean
+  startedAt: string
+  lastActivityAt: string
+  frustrationScore: number | null
+  interestingnessScore: number | null
+  userIntent: string | null
+  economicImpact: number | null
+  hasFrustrationSignals: boolean
+  hasFormInteraction: boolean
+  hasErrors: boolean
+  totalErrors: number
+  totalRageClicks: number
+  totalDeadClicks: number
+  browser: string | null
+  os: string | null
+  device: string | null
+  activeTime: number | null
+  crashDetected: boolean
+}
+
+export type AnalyticsEvent = {
+  id: string
+  type: string
+  category: string | null
+  name: string | null
+  url: string
+  referrer: string | null
+  userAgent: string | null
+  viewportWidth: number | null
+  viewportHeight: number | null
+  screenWidth: number | null
+  screenHeight: number | null
+  payload: string | null
+  projectId: string
+  sessionId: string | null
+  visitorId: string | null
+  severity: number | null
+  fingerprint: string | null
+  timestamp: string
+}
+
+export type SourceResult = {
+  referrer: string
+  count: number
+}
+
+export type EventTypeDist = {
+  type: string
+  count: number
+}
+
+const ANALYTICS_OVERVIEW_QUERY = gql`
+  query AnalyticsOverview($projectId: String!) {
+    analyticsOverview(projectId: $projectId) {
+      totalPageViews
+      uniqueVisitors
+      bounceRate
+      avgSessionDuration
+      topPages { url views uniqueVisitors }
+    }
+  }
+`
+
+const ANALYTICS_PAGE_VIEWS_QUERY = gql`
+  query AnalyticsPageViews($projectId: String!, $from: String, $to: String) {
+    analyticsPageViews(projectId: $projectId, from: $from, to: $to) {
+      date
+      count
+    }
+  }
+`
+
+const ANALYTICS_SESSIONS_QUERY = gql`
+  query AnalyticsSessions($projectId: String!, $limit: Int) {
+    analyticsSessions(projectId: $projectId, limit: $limit) {
+      id
+      visitorId
+      startUrl
+      referrer
+      userAgent
+      pageViews
+      eventCount
+      duration
+      isBounce
+      startedAt
+      frustrationScore
+      interestingnessScore
+      userIntent
+      hasFrustrationSignals
+      hasErrors
+      totalErrors
+      totalRageClicks
+      totalDeadClicks
+      browser
+      os
+      device
+    }
+  }
+`
+
+const ANALYTICS_SESSION_QUERY = gql`
+  query AnalyticsSession($id: String!) {
+    analyticsSession(id: $id) {
+      id
+      visitorId
+      startUrl
+      referrer
+      userAgent
+      pageViews
+      eventCount
+      duration
+      isBounce
+      startedAt
+      lastActivityAt
+      frustrationScore
+      interestingnessScore
+      userIntent
+      economicImpact
+      hasFrustrationSignals
+      hasFormInteraction
+      hasErrors
+      totalErrors
+      totalRageClicks
+      totalDeadClicks
+      browser
+      os
+      device
+      activeTime
+      crashDetected
+    }
+  }
+`
+
+const ANALYTICS_SESSION_EVENTS_QUERY = gql`
+  query AnalyticsSessionEvents($sessionId: String!) {
+    analyticsSessionEvents(sessionId: $sessionId) {
+      id
+      type
+      category
+      name
+      url
+      referrer
+      userAgent
+      viewportWidth
+      viewportHeight
+      payload
+      severity
+      fingerprint
+      timestamp
+    }
+  }
+`
+
+const ANALYTICS_TOP_PAGES_QUERY = gql`
+  query AnalyticsTopPages($projectId: String!, $limit: Int) {
+    analyticsTopPages(projectId: $projectId, limit: $limit) {
+      url
+      views
+      uniqueVisitors
+    }
+  }
+`
+
+const ANALYTICS_SOURCES_QUERY = gql`
+  query AnalyticsSources($projectId: String!) {
+    analyticsSources(projectId: $projectId) {
+      referrer
+      count
+    }
+  }
+`
+
+const ANALYTICS_EVENT_TYPES_QUERY = gql`
+  query AnalyticsEventTypes($projectId: String!) {
+    analyticsEventTypes(projectId: $projectId) {
+      type
+      count
+    }
+  }
+`
+
+export function useAnalyticsOverview(projectId?: string) {
+  return useQuery({
+    queryKey: ['analyticsOverview', projectId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsOverview: AnalyticsOverview }>(
+        ANALYTICS_OVERVIEW_QUERY,
+        { projectId },
+      )
+      return data.analyticsOverview
+    },
+    enabled: !!projectId,
+  })
+}
+
+export function useAnalyticsPageViews(projectId?: string, from?: string, to?: string) {
+  return useQuery({
+    queryKey: ['analyticsPageViews', projectId, from, to],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsPageViews: PageViewTimeSeriesPoint[] }>(
+        ANALYTICS_PAGE_VIEWS_QUERY,
+        { projectId, from, to },
+      )
+      return data.analyticsPageViews
+    },
+    enabled: !!projectId,
+  })
+}
+
+export function useAnalyticsSessions(projectId?: string, limit = 50) {
+  return useQuery({
+    queryKey: ['analyticsSessions', projectId, limit],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsSessions: AnalyticsSession[] }>(
+        ANALYTICS_SESSIONS_QUERY,
+        { projectId, limit },
+      )
+      return data.analyticsSessions
+    },
+    enabled: !!projectId,
+  })
+}
+
+export function useAnalyticsSession(id?: string) {
+  return useQuery({
+    queryKey: ['analyticsSession', id],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsSession: AnalyticsSession }>(
+        ANALYTICS_SESSION_QUERY,
+        { id },
+      )
+      return data.analyticsSession
+    },
+    enabled: !!id,
+  })
+}
+
+export function useAnalyticsSessionEvents(sessionId?: string) {
+  return useQuery({
+    queryKey: ['analyticsSessionEvents', sessionId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsSessionEvents: AnalyticsEvent[] }>(
+        ANALYTICS_SESSION_EVENTS_QUERY,
+        { sessionId },
+      )
+      return data.analyticsSessionEvents
+    },
+    enabled: !!sessionId,
+  })
+}
+
+export function useAnalyticsTopPages(projectId?: string, limit = 10) {
+  return useQuery({
+    queryKey: ['analyticsTopPages', projectId, limit],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsTopPages: AnalyticsEvent[] }>(
+        ANALYTICS_TOP_PAGES_QUERY,
+        { projectId, limit },
+      )
+      return data.analyticsTopPages
+    },
+    enabled: !!projectId,
+  })
+}
+
+export function useAnalyticsSources(projectId?: string) {
+  return useQuery({
+    queryKey: ['analyticsSources', projectId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsSources: SourceResult[] }>(
+        ANALYTICS_SOURCES_QUERY,
+        { projectId },
+      )
+      return data.analyticsSources
+    },
+    enabled: !!projectId,
+  })
+}
+
+export function useAnalyticsEventTypes(projectId?: string) {
+  return useQuery({
+    queryKey: ['analyticsEventTypes', projectId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsEventTypes: EventTypeDist[] }>(
+        ANALYTICS_EVENT_TYPES_QUERY,
+        { projectId },
+      )
+      return data.analyticsEventTypes
+    },
+    enabled: !!projectId,
+  })
+}

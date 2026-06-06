@@ -1,6 +1,8 @@
 import {
+  BarChart3,
   BellRing,
   Bug,
+  History,
   LayoutDashboard,
   Layers,
   LifeBuoy,
@@ -19,6 +21,8 @@ export const navigationGroups = [
       { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
       { label: 'Monitors', path: '/app/monitors', icon: Radar },
       { label: 'Errors', path: '/app/errors', icon: Bug },
+      { label: 'Analytics', path: '/app/analytics', icon: BarChart3 },
+      { label: 'Sessions', path: '/app/analytics/sessions', icon: History },
       { label: 'Incidents', path: '/app/incidents', icon: Siren },
     ],
   },

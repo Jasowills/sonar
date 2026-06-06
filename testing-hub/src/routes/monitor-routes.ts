@@ -43,5 +43,6 @@ monitorRouter.get('/version', (_req: Request, res: Response) => {
     node: process.version,
     environmentKey: process.env.SONAR_ENVIRONMENT_KEY ?? '(not set)',
     apiKeySet: Boolean(process.env.SONAR_API_KEY),
+    apiKeyPrefix: process.env.SONAR_API_KEY ? process.env.SONAR_API_KEY.slice(0, 12) : null,
   })
 })

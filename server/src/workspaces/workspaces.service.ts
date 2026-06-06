@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../shared/prisma-errors';
@@ -15,15 +15,19 @@ type WorkspaceRecord = {
 
 @Injectable()
 export class WorkspacesService {
+  private readonly logger = new Logger(WorkspacesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<WorkspaceRecord[]> {
+  async findAll(userId?: string): Promise<WorkspaceRecord[]> {
     try {
       return await this.prisma.workspace.findMany({
+        where: userId ? { memberships: { some: { userId } } } : undefined,
         orderBy: { createdAt: 'asc' },
       });
-    } catch {
-      return [];
+    } catch (error) {
+      this.logger.error(`findAll failed for user ${userId}: ${error}`);
+      throw error;
     }
   }
 
@@ -55,12 +59,20 @@ export class WorkspacesService {
     }
   }
 
-  async remove(id: string): Promise<boolean> {
+  async remove(id: string, userId?: string): Promise<boolean> {
     try {
+      const membership = await this.prisma.membership.findFirst({
+        where: { workspaceId: id, userId },
+      });
+      if (!membership) {
+        throw new Error('Not authorized to delete this workspace');
+      }
+
       await this.prisma.membership.deleteMany({ where: { workspaceId: id } });
       await this.prisma.workspace.delete({ where: { id } });
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(`remove failed for workspace ${id} by user ${userId}: ${error}`);
       return false;
     }
   }
