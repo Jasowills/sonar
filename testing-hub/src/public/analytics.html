@@ -169,6 +169,7 @@
         sessionRecording: {
           enabled: true,
           sampleIntervalMs: 200,
+          video: true,
         },
         captureScreenshots: {
           enabled: true,
@@ -233,7 +234,7 @@
     try {
       const data = await sonar.screenshot()
       if (data) {
-        sonar.track('screenshot', { size: data.length })
+        sonar.track('screenshot', { data, size: data.length })
         eventCount++
         updateEventCount()
         showResult(`Screenshot captured (${data.length} chars)`)

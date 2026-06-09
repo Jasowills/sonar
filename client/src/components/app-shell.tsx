@@ -17,6 +17,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationPanel } from '@/components/notification-panel'
 import { ToastContainer } from '@/components/toast-container'
 import { FaviconIndicator } from '@/components/favicon-indicator'
+import { CommandPalette } from '@/components/command-palette'
 import { CreateProjectModal } from '@/features/create/create-project-modal'
 
 type AppShellProps = {
@@ -333,6 +334,7 @@ Sonar
       </div>
 
       <ToastContainer />
+      <CommandPalette />
       <FaviconIndicator />
     </div>
     </>

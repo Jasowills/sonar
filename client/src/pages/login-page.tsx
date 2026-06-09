@@ -35,7 +35,7 @@ export function LoginPage() {
             <LogoMark className="h-12 w-12" />
             <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--text-main)]">Sonar</p>
             <p className="text-center text-xs leading-5 text-[var(--text-muted)]">
-              Observability for small SaaS teams.
+              Observability for developers.
             </p>
           </div>
 

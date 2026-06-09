@@ -16,8 +16,8 @@ export type SseErrorCreated = {
 }
 
 export type SseEvent = {
-  type: 'notification' | 'error_created'
-  data: SseNotification | SseErrorCreated
+  type: 'notification' | 'error_created' | 'analytics_ingested'
+  data: SseNotification | SseErrorCreated | Record<string, unknown>
 }
 
 type EventContextValue = {
@@ -42,7 +42,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+    const base = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080').replace('/graphql', '')
     const url = `${base}/events/stream?token=${encodeURIComponent(token)}`
     console.debug('[SSE] connecting to', url.replace(/token=.*$/, 'token=…'))
     const es = new EventSource(url)

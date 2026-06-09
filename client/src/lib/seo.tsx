@@ -2,7 +2,7 @@ import { Helmet } from 'react-helmet-async'
 
 const SITE_NAME = 'Sonar'
 const SITE_URL = 'https://sonar.app'
-const DEFAULT_DESC = 'Uptime monitoring, error tracing, and incident response for SaaS teams.'
+const DEFAULT_DESC = 'Uptime monitoring, error tracing, and incident response for developers.'
 const OG_IMAGE = '/og-image.png'
 
 type SEOProps = {

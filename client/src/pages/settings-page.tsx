@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useRef, type FormEvent } from 'react'
 import {
   AlertTriangle,
   BellRing,
@@ -434,13 +434,52 @@ function DangerSection() {
 }
 
 export function SettingsPage() {
+  const [activeSection, setActiveSection] = useState('profile')
+  const sectionRefs = {
+    profile: useRef<HTMLDivElement>(null),
+    workspace: useRef<HTMLDivElement>(null),
+    apikeys: useRef<HTMLDivElement>(null),
+    integrations: useRef<HTMLDivElement>(null),
+    danger: useRef<HTMLDivElement>(null),
+  }
+
+  const sections = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'workspace', label: 'Workspace' },
+    { id: 'apikeys', label: 'API Keys' },
+    { id: 'integrations', label: 'Integrations' },
+    { id: 'danger', label: 'Danger Zone' },
+  ] as const
+
+  const scrollTo = (id: string) => {
+    setActiveSection(id)
+    sectionRefs[id as keyof typeof sectionRefs]?.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <ProfileSection />
-      <WorkspaceSection />
-      <ApiKeysSection />
-      <IntegrationsSection />
-      <DangerSection />
+    <div className="flex gap-8">
+      <nav className="sticky top-24 hidden h-fit w-48 shrink-0 space-y-1 lg:block">
+        {sections.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => scrollTo(s.id)}
+            className={`block w-full rounded px-3 py-1.5 text-left text-sm ${
+              activeSection === s.id
+                ? 'bg-[var(--accent-soft)] font-medium text-[var(--accent-strong)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
+      <div className="min-w-0 flex-1 space-y-6">
+        <div ref={sectionRefs.profile}><ProfileSection /></div>
+        <div ref={sectionRefs.workspace}><WorkspaceSection /></div>
+        <div ref={sectionRefs.apikeys}><ApiKeysSection /></div>
+        <div ref={sectionRefs.integrations}><IntegrationsSection /></div>
+        <div ref={sectionRefs.danger}><DangerSection /></div>
+      </div>
     </div>
   )
 }

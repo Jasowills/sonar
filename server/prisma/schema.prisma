@@ -269,9 +269,13 @@ model AlertRule {
 model StatusPage {
   id            String               @id @default(cuid()) @map("_id")
   name          String
-  slug          String               @unique
+  slug          String
   headline      String?
   visibility    String               @default("PUBLIC")
+  logoUrl       String?
+  faviconUrl    String?
+  brandColor    String?
+  footerText    String?
   createdAt     DateTime
   updatedAt     DateTime
   workspaceId   String
@@ -281,10 +285,15 @@ model StatusPage {
   services      StatusPageService[]
 }
 
+// Slug is unique within a workspace (enforced at app-level via findFirst checks)
+// because MongoDB does not support @@unique constraints
+
 model StatusPageService {
   id            String      @id @default(cuid()) @map("_id")
   displayName   String?
   sortOrder     Int         @default(0)
+  groupName     String?
+  isVisible     Boolean     @default(true)
   statusPageId  String
   serviceId     String
   statusPage    StatusPage  @relation(fields: [statusPageId], references: [id])
@@ -386,6 +395,7 @@ model AnalyticsSession {
   device                String?
   activeTime            Int?
   crashDetected         Boolean     @default(false)
+  videoUrl              String?
 
   project              Project      @relation(fields: [projectId], references: [id])
 

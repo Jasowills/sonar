@@ -113,6 +113,12 @@ function isPublicPath(path: string): boolean {
   return false
 }
 
+function getStatusPathParams(path: string): { workspaceSlug: string; slug: string } | null {
+  const match = path.match(/^\/status\/([^/]+)\/([^/]+)/)
+  if (match) return { workspaceSlug: match[1], slug: match[2] }
+  return null
+}
+
 function AppContent() {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
@@ -131,8 +137,8 @@ function AppContent() {
         fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}
       >
         <SEO
-          title="Observability for SaaS teams"
-          description="Sonar combines uptime monitoring, error tracing, alert routing, incident response, and status pages for small SaaS teams."
+          title="Observability for developers"
+          description="Sonar combines uptime monitoring, error tracing, alert routing, incident response, and status pages for developers."
           path="/"
         />
         <LandingPage />
@@ -155,9 +161,17 @@ function AppContent() {
     location.pathname === '/docs'
 
   if (location.pathname.startsWith('/status/')) {
+    const statusParams = getStatusPathParams(location.pathname)
+    if (!statusParams) {
+      return (
+        <Routes>
+          <Route path="/status/:workspaceSlug/:slug" element={<PublicStatusPage />} />
+        </Routes>
+      )
+    }
     return (
       <Routes>
-        <Route path="/status/:slug" element={<PublicStatusPage />} />
+        <Route path="/status/:workspaceSlug/:slug" element={<PublicStatusPage />} />
       </Routes>
     )
   }
@@ -245,7 +259,7 @@ function AppContent() {
         <Route path="/app/monitors" element={<MonitorsPage />} />
         <Route path="/app/analytics" element={<AnalyticsPage />} />
         <Route path="/app/analytics/sessions" element={<AnalyticsSessionsPage />} />
-        <Route path="/app/analytics/sessions/:id" element={<AnalyticsSessionDetailPage />} />
+        <Route path="/app/analytics/sessions/:id" element={<AnalyticsSessionsPage />} />
         <Route path="/app/errors" element={<ErrorsPage />} />
         <Route path="/app/incidents" element={<IncidentsPage />} />
         <Route path="/app/incidents/:id" element={<IncidentDetailPage />} />

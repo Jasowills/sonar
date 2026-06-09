@@ -116,10 +116,20 @@ export class NotificationsService {
     if (['monitor_down', 'incident_created', 'alert_fired'].includes(data.type)) {
       const user = await this.prisma.user.findUnique({ where: { id: data.userId } });
       if (user?.email) {
+        const safeBody = (data.body ?? data.title)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        const safeLink = (data.link ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
         await this.email.send(
           user.email,
           `[Sonar] ${data.title}`,
-          `<p>${data.body ?? data.title}</p><p><a href="${process.env.CLIENT_URL ?? 'http://localhost:3000'}${data.link ?? ''}">View in Sonar</a></p>`,
+          `<p>${safeBody}</p><p><a href="${process.env.CLIENT_URL ?? 'http://localhost:3000'}${safeLink}">View in Sonar</a></p>`,
         );
       }
     }

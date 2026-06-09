@@ -10,6 +10,9 @@ type AnalyticsOverview = {
   bounceRate: number;
   avgSessionDuration: number | null;
   topPages: Array<{ url: string; views: number; uniqueVisitors: number }>;
+  totalRageClicks: number;
+  totalDeadClicks: number;
+  totalErrors: number;
 };
 
 type PageViewTimeSeries = Array<{ date: string; count: number }>;
@@ -55,7 +58,10 @@ export class AnalyticsService {
         where: { id },
         select: { sessionKey: true },
       });
-      if (!session) return;
+      if (!session) {
+        console.log(`[analytics] scoreSession: session ${id} not found`);
+        return;
+      }
       const key = session.sessionKey ?? id;
 
       const events = await this.prisma.analyticsEvent.findMany({
@@ -93,8 +99,10 @@ export class AnalyticsService {
           totalDeadClicks: deadClicks,
         },
       });
-    } catch {
-      // scoring is best-effort
+
+      console.log(`[analytics] scored session ${id}: frustration=${frustrationScore}, rage=${rageClicks}, dead=${deadClicks}, errors=${errors}`);
+    } catch (err) {
+      console.log(`[analytics] scoreSession error for ${id}:`, err);
     }
   }
 
@@ -103,7 +111,7 @@ export class AnalyticsService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     try {
-      const [pageViews, uniqueVisitors, sessions, topPagesRaw] = await Promise.all([
+      const [pageViews, uniqueVisitors, sessions, topPagesRaw, aggregation] = await Promise.all([
         this.prisma.analyticsEvent.count({
           where: { projectId, type: 'page_view', timestamp: { gte: thirtyDaysAgo } },
         }),
@@ -121,6 +129,14 @@ export class AnalyticsService {
           _count: { id: true },
           orderBy: { _count: { id: 'desc' } },
           take: 10,
+        }),
+        this.prisma.analyticsSession.aggregate({
+          where: { projectId, startedAt: { gte: thirtyDaysAgo } },
+          _sum: {
+            totalRageClicks: true,
+            totalDeadClicks: true,
+            totalErrors: true,
+          },
         }),
       ]);
 
@@ -150,15 +166,28 @@ export class AnalyticsService {
         bounceRate: totalSessions > 0 ? bounceCount / totalSessions : 0,
         avgSessionDuration: avgDuration,
         topPages,
+        totalRageClicks: aggregation._sum.totalRageClicks || 0,
+        totalDeadClicks: aggregation._sum.totalDeadClicks || 0,
+        totalErrors: aggregation._sum.totalErrors || 0,
       };
-    } catch {
-      return { totalPageViews: 0, uniqueVisitors: 0, bounceRate: 0, avgSessionDuration: null, topPages: [] };
+    } catch (err) {
+      console.error('[analytics] getOverview error:', err);
+      return {
+        totalPageViews: 0,
+        uniqueVisitors: 0,
+        bounceRate: 0,
+        avgSessionDuration: null,
+        topPages: [],
+        totalRageClicks: 0,
+        totalDeadClicks: 0,
+        totalErrors: 0,
+      };
     }
   }
 
   async getPageViewsTimeSeries(projectId: string, from?: string, to?: string): Promise<PageViewTimeSeries> {
     const now = new Date();
-    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fromDate = from ? new Date(from) : new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
     const toDate = to ? new Date(to) : now;
 
     try {
@@ -307,12 +336,15 @@ export class AnalyticsService {
     if (!projectId || events.length === 0) return;
 
     const now = new Date();
+    const screenshotEvents = events.filter((e) => e.type === 'screenshot' && e.payload);
+    if (screenshotEvents.length > 0) {
+      console.log(`[analytics] processing ${screenshotEvents.length} screenshot(s), cloudinary=${this.cloudinary.isConfigured}`);
+    }
 
     // Upload screenshot data URLs to Cloudinary
     if (this.cloudinary.isConfigured) {
-      await Promise.all(
-        events
-          .filter((e) => e.type === 'screenshot' && e.payload)
+      const results = await Promise.all(
+        screenshotEvents
           .map(async (e) => {
             try {
               const parsed = JSON.parse(e.payload!);
@@ -322,13 +354,20 @@ export class AnalyticsService {
                   parsed.cloudinaryUrl = url;
                   parsed.data = '[uploaded to cloudinary]';
                   e.payload = JSON.stringify(parsed);
+                  console.log(`[analytics] screenshot uploaded to cloudinary: ${url}`);
+                  return true;
                 }
+                console.log('[analytics] cloudinary upload returned null');
+              } else {
+                console.log('[analytics] screenshot payload has no data URL');
               }
-            } catch {
-              // skip upload failures
+            } catch (err) {
+              console.log('[analytics] screenshot upload failed:', err);
             }
+            return false;
           }),
       );
+      console.log(`[analytics] ${results.filter(Boolean).length}/${screenshotEvents.length} screenshots uploaded`);
     }
 
     try {
@@ -374,6 +413,7 @@ export class AnalyticsService {
               ),
             },
           });
+          console.log(`[analytics] session ${existing.id} updated (views=${existing.pageViews}, events=${existing.eventCount})`);
           this.scoreSession(existing.id);
         } else {
           const ua = session.userAgent ?? null;
@@ -398,6 +438,7 @@ export class AnalyticsService {
               duration: null,
             },
           });
+          console.log(`[analytics] session ${created.id} created (sessionKey=${session.sessionId})`);
           this.scoreSession(created.id);
         }
       }
@@ -406,8 +447,8 @@ export class AnalyticsService {
         type: 'analytics_ingested',
         data: { projectId, eventCount: events.length },
       });
-    } catch {
-      // ingest is best-effort
+    } catch (err) {
+      console.log('[analytics] ingest error:', err);
     }
   }
 }

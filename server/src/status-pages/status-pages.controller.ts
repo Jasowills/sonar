@@ -26,9 +26,15 @@ export class StatusPagesController {
   constructor(private readonly statusPagesService: StatusPagesService) {}
 
   @Public()
-  @Get(':slug')
-  async getStatusPage(@Param('slug') slug: string) {
-    const detail = await this.statusPagesService.findBySlug(slug);
+  @Get(':workspaceSlug/:slug')
+  async getStatusPage(
+    @Param('workspaceSlug') workspaceSlug: string,
+    @Param('slug') slug: string,
+  ) {
+    const detail = await this.statusPagesService.findByWorkspaceAndSlug(
+      workspaceSlug,
+      slug,
+    );
     if (!detail) throw new NotFoundException('Status page not found');
 
     const overall = computeOverall(detail.services);
@@ -38,12 +44,18 @@ export class StatusPagesController {
         name: detail.name,
         slug: detail.slug,
         headline: detail.headline,
+        logoUrl: detail.logoUrl,
+        faviconUrl: detail.faviconUrl,
+        brandColor: detail.brandColor,
+        footerText: detail.footerText,
       },
       overall,
       updatedAt: detail.updatedAt.toISOString(),
       services: detail.services.map((s) => ({
         id: s.id,
         name: s.displayName ?? s.name,
+        groupName: s.groupName,
+        isVisible: s.isVisible,
         status: statusMap[s.status] ?? 'unknown',
         latencyMs: s.latencyMs,
       })),

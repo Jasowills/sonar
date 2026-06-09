@@ -16,6 +16,7 @@ export function StatusPagesPage() {
   const [mutationError, setMutationError] = useState<string[] | null>(null)
 
   const clientUrl = import.meta.env.VITE_CLIENT_URL ?? 'http://localhost:3000'
+  const workspaceSlug = workspace?.slug
 
   if (isLoading) {
     return (
@@ -127,7 +128,7 @@ export function StatusPagesPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <a
-                    href={`${clientUrl}/status/${page.slug}`}
+                    href={`${clientUrl}/status/${page.workspaceSlug}/${page.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
@@ -166,7 +167,7 @@ export function StatusPagesPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
-            The public page is live at <code className="text-[var(--text-main)]">/status/&#123;slug&#125;</code>.
+            The public page is live at <code className="text-[var(--text-main)]">/status/&#123;workspace&#125;/&#123;slug&#125;</code>.
           </li>
         </ul>
       </section>

@@ -14,6 +14,12 @@ export class ServiceHealthModel {
   @Field(() => String, { nullable: true })
   displayName: string | null;
 
+  @Field(() => String, { nullable: true })
+  groupName: string | null;
+
+  @Field()
+  isVisible: boolean;
+
   @Field()
   status: string;
 

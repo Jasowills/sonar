@@ -5,7 +5,8 @@ import { BatchTransport } from './transport'
 import { AutoTracker } from './auto'
 import type { AutoTrackerHost } from './auto'
 import { SessionRecorder } from './session-recorder'
-import { SmartScreenshotCapture } from './screenshot'
+import { VideoRecorder } from './video-recorder'
+import { SmartScreenshotCapture, ensureHtml2canvas, captureViewport } from './screenshot'
 import { FrustrationDetector } from './frustration'
 import type { FrustrationHost } from './frustration'
 
@@ -15,6 +16,7 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
   private transport: BatchTransport
   private autoTracker: AutoTracker | null = null
   private sessionRecorder: SessionRecorder | null = null
+  private videoRecorder: VideoRecorder | null = null
   private smartScreenshot: SmartScreenshotCapture | null = null
   private frustrationDetector: FrustrationDetector | null = null
   private releaseUnlistenConsent: (() => void) | null = null
@@ -56,6 +58,13 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
     if (options.sessionRecording) {
       const srOpts = typeof options.sessionRecording === 'object' ? options.sessionRecording : {}
       this.sessionRecorder = new SessionRecorder(this, srOpts)
+      const videoOpts = typeof srOpts.video === 'object' ? srOpts.video : srOpts.video === true ? {} : null
+      if (videoOpts) {
+        this.videoRecorder = new VideoRecorder(
+          { sessionId: this.visitor.sessionId, apiKey: options.apiKey, endpoint },
+          videoOpts,
+        )
+      }
     }
 
     if (options.intelligence) {
@@ -94,6 +103,7 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
 
     this.autoTracker?.init()
     this.sessionRecorder?.init()
+    this.videoRecorder?.init()
     this.frustrationDetector?.init()
   }
 
@@ -101,6 +111,7 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
     this.started = false
     this.autoTracker?.destroy()
     this.sessionRecorder?.destroy()
+    this.videoRecorder?.destroy()
     this.frustrationDetector?.destroy()
   }
 
@@ -169,7 +180,9 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
   }
 
   async screenshot(): Promise<string | null> {
-    return null
+    const ok = await ensureHtml2canvas()
+    if (!ok) return null
+    return captureViewport()
   }
 
   setConsent(state: ConsentState) {
@@ -185,6 +198,7 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
     this.transport.stop()
     this.autoTracker?.destroy()
     this.sessionRecorder?.destroy()
+    this.videoRecorder?.destroy()
     this.frustrationDetector?.destroy()
     this.smartScreenshot?.destroy()
     this.consent.hideBanner()

@@ -133,6 +133,28 @@ export function AnalyticsSessionDetailPage() {
         </div>
       )}
 
+      {/* Session video */}
+      {session.videoUrl && (
+        <div className="border border-[var(--border-soft)]">
+          <div className="border-b border-[var(--border-soft)] px-5 py-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
+              <Activity className="h-4 w-4 text-[var(--text-muted)]" />
+              Session recording
+            </h3>
+          </div>
+          <div className="px-5 py-4">
+            <video
+              src={session.videoUrl}
+              controls
+              className="w-full max-h-[480px] rounded border border-[var(--border-soft)] bg-black"
+              preload="metadata"
+            >
+              Your browser does not support video playback.
+            </video>
+          </div>
+        </div>
+      )}
+
       {/* Event timeline */}
       <div className="border border-[var(--border-soft)]">
         <div className="border-b border-[var(--border-soft)] px-5 py-4">

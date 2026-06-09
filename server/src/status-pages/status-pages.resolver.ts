@@ -8,6 +8,7 @@ import {
   UpdateStatusPageInput,
   AddStatusPageServiceInput,
   RemoveStatusPageServiceInput,
+  UpdateStatusPageServiceInput,
 } from './status-pages.inputs';
 
 @Resolver(() => StatusPageModel)
@@ -25,8 +26,11 @@ export class StatusPagesResolver {
   }
 
   @Query(() => StatusPageDetailModel, { nullable: true })
-  statusPageBySlug(@Args('slug') slug: string): Promise<StatusPageDetailModel | null> {
-    return this.statusPagesService.findBySlug(slug);
+  statusPageBySlug(
+    @Args('workspaceSlug') workspaceSlug: string,
+    @Args('slug') slug: string,
+  ): Promise<StatusPageDetailModel | null> {
+    return this.statusPagesService.findByWorkspaceAndSlug(workspaceSlug, slug);
   }
 
   @Mutation(() => StatusPageModel)
@@ -60,5 +64,12 @@ export class StatusPagesResolver {
     @Args('input') input: RemoveStatusPageServiceInput,
   ): Promise<boolean> {
     return this.statusPagesService.removeService(input);
+  }
+
+  @Mutation(() => Boolean)
+  updateStatusPageService(
+    @Args('input') input: UpdateStatusPageServiceInput,
+  ): Promise<boolean> {
+    return this.statusPagesService.updateService(input);
   }
 }

@@ -14,6 +14,9 @@ export class AnalyticsOverviewResult {
   @Field(() => Float) bounceRate!: number;
   @Field(() => Int, { nullable: true }) avgSessionDuration!: number | null;
   @Field(() => [TopPageResult]) topPages!: TopPageResult[];
+  @Field(() => Int) totalRageClicks!: number;
+  @Field(() => Int) totalDeadClicks!: number;
+  @Field(() => Int) totalErrors!: number;
 }
 
 @ObjectType()

@@ -61,7 +61,7 @@ const sections = [
 const content: Record<string, DocPage> = {
   overview: {
     title: 'Overview',
-    body: 'Sonar is an observability platform designed for small SaaS teams. It unifies uptime monitoring, error tracing, alert routing, incident response, and status pages on a single surface. This documentation covers the Sonar SDK, REST APIs, GraphQL queries, and best practices for integrating your services.',
+    body: 'Sonar is an observability platform for developers. It unifies uptime monitoring, error tracing, alert routing, incident response, and status pages on a single surface. This documentation covers the Sonar SDK, REST APIs, GraphQL queries, and best practices for integrating your services.',
     sections: [
       {
         heading: 'What is Sonar?',
@@ -673,7 +673,7 @@ mutation RemoveService {
       },
       {
         heading: 'Public endpoint',
-        text: 'The public page is served at GET /status/:slug and returns JSON. No authentication is required. The JSON response includes page info, an overall status string (operational / partial_outage / major_outage), and per-service health. Use this endpoint to feed external status badges or monitoring tools.',
+        text: 'The public page is served at GET /status/:workspaceSlug/:slug and returns JSON. No authentication is required. The JSON response includes page info, an overall status string (operational / partial_outage / major_outage), and per-service health. Use this endpoint to feed external status badges or monitoring tools.',
       },
       {
         heading: 'Service management',
@@ -900,7 +900,7 @@ if (sonar.getConsent() === 'granted') {
       },
       {
         heading: 'Event types',
-        text: 'Standard event types include page_view, click, scroll, form_submit, console_error, and custom. Session recording events (recording_mouse, recording_click, recording_scroll) are batched separately. Events are flushed every 5 seconds or when the buffer reaches 50 items.',
+        text: 'Standard event types include page_view, click, scroll, form_submit, console_error, and custom. Session recording events (recording_mouse, recording_click, recording_scroll) are batched separately. When video recording is enabled, the SDK captures the viewport at 1 fps via html2canvas + MediaRecorder and uploads the resulting WebM to your Cloudinary bucket for replay. Events are flushed every 5 seconds or when the buffer reaches 50 items.',
       },
     ],
   },

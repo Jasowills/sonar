@@ -89,4 +89,7 @@ export class AnalyticsSessionModel {
 
   @Field()
   crashDetected!: boolean;
+
+  @Field(() => String, { nullable: true })
+  videoUrl?: string | null;
 }

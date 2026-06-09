@@ -4,6 +4,7 @@ export { BatchTransport } from './browser/transport'
 export { VisitorManager } from './browser/visitor'
 export { AutoTracker } from './browser/auto'
 export { SmartScreenshotCapture } from './browser/screenshot'
+export { VideoRecorder } from './browser/video-recorder'
 export { SessionRecorder } from './browser/session-recorder'
 export { FrustrationDetector } from './browser/frustration'
 export type {
@@ -12,6 +13,7 @@ export type {
   ConsentBannerOptions,
   AutoTrackOptions,
   SessionRecorderOptions,
+  VideoRecorderOptions,
   ScreenshotOptions,
   AnalyticsEventPayload,
   AnalyticsSessionPayload,

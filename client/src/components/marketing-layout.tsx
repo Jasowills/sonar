@@ -60,7 +60,7 @@ export function MarketingLayout({
               </span>
             </div>
             <p className="max-w-xs text-xs leading-6 text-[var(--text-muted)]">
-              Observability for small SaaS teams. Uptime checks, error tracing,
+              Observability for developers. Uptime checks, error tracing,
               alert routing, incident timelines, and status pages — on one quiet
               operational surface.
             </p>

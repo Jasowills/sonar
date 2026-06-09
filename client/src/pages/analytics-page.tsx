@@ -1,4 +1,4 @@
-import { BarChart3, ExternalLink, Activity, Users, Timer, CornerDownRight } from 'lucide-react'
+import { BarChart3, ExternalLink, Activity, Users, Timer, CornerDownRight, ArrowRight, Eye, Flame, AlertTriangle, AlertCircle } from 'lucide-react'
 import {
   useAnalyticsOverview,
   useAnalyticsPageViews,
@@ -47,6 +47,17 @@ export function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[var(--text-main)]">Overview</h2>
+        <a
+          href="/app/analytics/sessions"
+          className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)]"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          View sessions
+          <ArrowRight className="h-3 w-3" />
+        </a>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={Activity}
@@ -72,6 +83,33 @@ export function AnalyticsPage() {
           value={overview.avgSessionDuration ? formatDuration(overview.avgSessionDuration) : '-'}
           sub="Duration in seconds"
         />
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-[var(--text-main)]">User Frustration</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard
+            icon={Flame}
+            label="Rage clicks"
+            value={overview.totalRageClicks.toLocaleString()}
+            sub="Rapid repeated clicks"
+            color="text-amber-500"
+          />
+          <StatCard
+            icon={AlertTriangle}
+            label="Dead clicks"
+            value={overview.totalDeadClicks.toLocaleString()}
+            sub="Clicks with no UI change"
+            color="text-amber-600"
+          />
+          <StatCard
+            icon={AlertCircle}
+            label="Total errors"
+            value={overview.totalErrors.toLocaleString()}
+            sub="JS & Network issues"
+            color="text-red-500"
+          />
+        </div>
       </div>
 
       <div className="border border-[var(--border-soft)]">
@@ -169,19 +207,21 @@ function StatCard({
   label,
   value,
   sub,
+  color,
 }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
   value: string
   sub: string
+  color?: string
 }) {
   return (
     <div className="border border-[var(--border-soft)] px-5 py-4">
       <div className="flex items-center gap-2.5">
-        <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+        <Icon className={`h-4 w-4 ${color || 'text-[var(--text-muted)]'}`} />
         <span className="text-xs font-medium text-[var(--text-muted)]">{label}</span>
       </div>
-      <p className="mt-2 text-2xl font-bold tracking-[-0.02em] text-[var(--text-main)]">{value}</p>
+      <p className={`mt-2 text-2xl font-bold tracking-[-0.02em] ${color || 'text-[var(--text-main)]'}`}>{value}</p>
       <p className="mt-0.5 text-xs text-[var(--text-muted)]">{sub}</p>
     </div>
   )

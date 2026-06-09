@@ -1,5 +1,4 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
 import { ApiKeyGuard } from '../auth/api-key.guard';
@@ -10,7 +9,6 @@ import { IngestAnalyticsInput } from './analytics.inputs';
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
-  @SkipThrottle()
   @UseGuards(ApiKeyGuard)
   @Post()
   ingest(@Body() input: IngestAnalyticsInput, @Req() req: Request) {
@@ -18,6 +16,8 @@ export class AnalyticsController {
       ...e,
       timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
     }));
+    const types = events.map((e) => e.type).join(', ');
+    console.log(`[analytics] ingested ${events.length} events (${types}) for project ${req.projectId} session=${input.session?.sessionId ?? 'none'}`);
     return this.analyticsService.ingest(events, input.session ?? null, req.projectId!);
   }
 }

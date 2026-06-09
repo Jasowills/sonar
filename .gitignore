@@ -10,5 +10,6 @@ client/dist/
 
 server/node_modules/
 server/dist/
-
+design.md
+product.md
 packages/*/node_modules/

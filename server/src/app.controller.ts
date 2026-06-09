@@ -7,7 +7,6 @@ import {
   HttpException,
   Post,
 } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
 import * as bcrypt from 'bcrypt';
 import { AppService } from './app.service';
 import { ApiKeysService } from './api-keys/api-keys.service';
@@ -269,7 +268,6 @@ export class AppController {
   }
 
   @Delete('auth/account')
-  @SkipThrottle()
   async deleteAccount(@Headers('authorization') authorization?: string) {
     const token = extractBearerToken(authorization);
     if (!token) {

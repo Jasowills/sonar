@@ -764,9 +764,11 @@ export type StatusPage = {
   slug: string
   headline: string | null
   visibility: string
+  logoUrl: string | null
   createdAt: string
   updatedAt: string
   workspaceId: string
+  workspaceSlug: string
   projectId: string | null
 }
 
@@ -778,7 +780,9 @@ const STATUS_PAGES_QUERY = gql`
       slug
       headline
       visibility
+      logoUrl
       workspaceId
+      workspaceSlug
       projectId
     }
   }
@@ -1678,6 +1682,7 @@ const CREATE_STATUS_PAGE = gql`
       headline
       visibility
       workspaceId
+      workspaceSlug
       projectId
     }
   }
@@ -1685,9 +1690,7 @@ const CREATE_STATUS_PAGE = gql`
 
 const DELETE_STATUS_PAGE = gql`
   mutation DeleteStatusPage($id: String!) {
-    deleteStatusPage(id: $id) {
-      id
-    }
+    deleteStatusPage(id: $id)
   }
 `
 
@@ -1714,11 +1717,10 @@ export function useDeleteStatusPage() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const data = await graphqlClient.request<{ deleteStatusPage: StatusPage }>(
+      await graphqlClient.request<{ deleteStatusPage: boolean }>(
         DELETE_STATUS_PAGE,
         { id },
       )
-      return data.deleteStatusPage
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['statusPages'] })
@@ -1733,32 +1735,39 @@ export type ServiceHealth = {
   serviceId: string
   name: string
   displayName: string | null
+  groupName: string | null
+  isVisible: boolean
   status: string
   latencyMs: number | null
   sortOrder: number
 }
 
 export type StatusPageDetail = StatusPage & {
+  faviconUrl: string | null
+  brandColor: string | null
+  footerText: string | null
   services: ServiceHealth[]
 }
 
 const STATUS_PAGE_QUERY = gql`
   query StatusPage($id: String!) {
     statusPage(id: $id) {
-      id name slug headline visibility createdAt updatedAt workspaceId projectId
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText
+      createdAt updatedAt workspaceId workspaceSlug projectId
       services {
-        id serviceId name displayName status latencyMs sortOrder
+        id serviceId name displayName groupName isVisible status latencyMs sortOrder
       }
     }
   }
 `
 
 const STATUS_PAGE_BY_SLUG_QUERY = gql`
-  query StatusPageBySlug($slug: String!) {
-    statusPageBySlug(slug: $slug) {
-      id name slug headline visibility createdAt updatedAt workspaceId projectId
+  query StatusPageBySlug($workspaceSlug: String!, $slug: String!) {
+    statusPageBySlug(workspaceSlug: $workspaceSlug, slug: $slug) {
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText
+      createdAt updatedAt workspaceId workspaceSlug projectId
       services {
-        id serviceId name displayName status latencyMs sortOrder
+        id serviceId name displayName groupName isVisible status latencyMs sortOrder
       }
     }
   }
@@ -1777,23 +1786,23 @@ export function useStatusPage(id: string) {
   })
 }
 
-export function useStatusPageBySlug(slug: string) {
+export function useStatusPageBySlug(workspaceSlug: string, slug: string) {
   return useQuery({
-    queryKey: ['statusPageBySlug', slug],
+    queryKey: ['statusPageBySlug', workspaceSlug, slug],
     queryFn: async () => {
       const data = await graphqlClient.request<{
         statusPageBySlug: StatusPageDetail
-      }>(STATUS_PAGE_BY_SLUG_QUERY, { slug })
+      }>(STATUS_PAGE_BY_SLUG_QUERY, { workspaceSlug, slug })
       return data.statusPageBySlug
     },
-    enabled: !!slug,
+    enabled: !!workspaceSlug && !!slug,
   })
 }
 
 const UPDATE_STATUS_PAGE = gql`
   mutation UpdateStatusPage($input: UpdateStatusPageInput!) {
     updateStatusPage(input: $input) {
-      id name slug headline visibility
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText
     }
   }
 `
@@ -1810,6 +1819,12 @@ const REMOVE_STATUS_PAGE_SERVICE = gql`
   }
 `
 
+const UPDATE_STATUS_PAGE_SERVICE = gql`
+  mutation UpdateStatusPageService($input: UpdateStatusPageServiceInput!) {
+    updateStatusPageService(input: $input)
+  }
+`
+
 export function useUpdateStatusPage() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1818,6 +1833,10 @@ export function useUpdateStatusPage() {
       name?: string
       headline?: string
       visibility?: string
+      logoUrl?: string | null
+      faviconUrl?: string | null
+      brandColor?: string | null
+      footerText?: string | null
     }) => {
       const data = await graphqlClient.request<{
         updateStatusPage: StatusPage
@@ -1827,6 +1846,30 @@ export function useUpdateStatusPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['statusPages'] })
       void queryClient.invalidateQueries({ queryKey: ['statusPage'] })
+    },
+  })
+}
+
+export function useUpdateStatusPageService() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      statusPageId: string
+      serviceId: string
+      displayName?: string | null
+      sortOrder?: number | null
+      groupName?: string | null
+      isVisible?: boolean | null
+    }) => {
+      const data = await graphqlClient.request<{
+        updateStatusPageService: boolean
+      }>(UPDATE_STATUS_PAGE_SERVICE, { input })
+      return data.updateStatusPageService
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['statusPage', vars.statusPageId],
+      })
     },
   })
 }
@@ -1961,6 +2004,7 @@ export type AnalyticsSession = {
   device: string | null
   activeTime: number | null
   crashDetected: boolean
+  videoUrl: string | null
 }
 
 export type AnalyticsEvent = {
@@ -2001,7 +2045,14 @@ const ANALYTICS_OVERVIEW_QUERY = gql`
       uniqueVisitors
       bounceRate
       avgSessionDuration
-      topPages { url views uniqueVisitors }
+      topPages {
+        url
+        views
+        uniqueVisitors
+      }
+      totalRageClicks
+      totalDeadClicks
+      totalErrors
     }
   }
 `
@@ -2039,6 +2090,7 @@ const ANALYTICS_SESSIONS_QUERY = gql`
       browser
       os
       device
+      videoUrl
     }
   }
 `
@@ -2072,6 +2124,7 @@ const ANALYTICS_SESSION_QUERY = gql`
       device
       activeTime
       crashDetected
+      videoUrl
     }
   }
 `

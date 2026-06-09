@@ -190,7 +190,7 @@ function Hero({ onNavigate }: { onNavigate: (target: string) => void }) {
           className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[var(--surface-panel)] px-3.5 py-1.5 text-xs font-medium text-[var(--text-muted)]"
         >
           <span className="signal-pulse h-1.5 w-1.5 rounded-full bg-[oklch(0.72_0.17_152)]" />
-          Observability for small SaaS teams
+          Observability for developers
         </span>
 
         <h1
@@ -480,7 +480,7 @@ function FinalCta() {
 function AnalyticsSpotlight() {
   const points = [
     'One SDK tag — page views, clicks, scrolls, and form submissions out of the box',
-    'Session recording replays the exact user flow, no extra instrumentation',
+    'Session recording replays the exact user flow as video, no extra instrumentation',
     'Built-in GDPR consent banner with DNT and Global Privacy Control detection',
     'Zero third-party scripts — every event stays inside your infrastructure',
   ]
@@ -496,7 +496,7 @@ function AnalyticsSpotlight() {
             <span className="text-[var(--text-muted)]">and whether they stay.</span>
           </h2>
           <p className="mt-5 max-w-md text-base leading-7 text-[var(--text-muted)]">
-            Page views, click maps, scroll depth, form analytics, and session
+            Page views, click maps, scroll depth, form analytics, and video session
             recordings — all captured by the same first-party SDK that powers
             your error tracing. No Google tag, no third-party scripts, no
             cookie banners.
@@ -598,7 +598,7 @@ function Footer({ onNavigate }: { onNavigate: (target: string) => void }) {
             </span>
           </div>
           <p className="max-w-xs text-xs leading-6 text-[var(--text-muted)]">
-            Observability for small SaaS teams. Uptime checks, error tracing,
+            Observability for developers. Uptime checks, error tracing,
             alert routing, incident timelines, and status pages — on one quiet
             operational surface.
           </p>
@@ -832,7 +832,7 @@ export function LandingPage() {
             applicationCategory: "DeveloperApplication",
             operatingSystem: "All",
             description:
-              "Uptime monitoring, error tracing, alert routing, incident response, and status pages for SaaS teams.",
+              "Uptime monitoring, error tracing, alert routing, incident response, and status pages for developers.",
             url: "https://sonar.app",
             offers: {
               "@type": "Offer",

@@ -17,6 +17,18 @@ export class StatusPageModel {
   @Field()
   visibility: string;
 
+  @Field(() => String, { nullable: true })
+  logoUrl: string | null;
+
+  @Field(() => String, { nullable: true })
+  faviconUrl: string | null;
+
+  @Field(() => String, { nullable: true })
+  brandColor: string | null;
+
+  @Field(() => String, { nullable: true })
+  footerText: string | null;
+
   @Field()
   createdAt: Date;
 
@@ -25,6 +37,9 @@ export class StatusPageModel {
 
   @Field()
   workspaceId: string;
+
+  @Field()
+  workspaceSlug: string;
 
   @Field(() => String, { nullable: true })
   projectId: string | null;

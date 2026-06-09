@@ -1,5 +1,4 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
 import { ApiKeyGuard } from '../auth/api-key.guard';
@@ -20,7 +19,6 @@ import { DeploymentsService } from './deployments.service';
 export class DeploymentsController {
   constructor(private readonly deploymentsService: DeploymentsService) {}
 
-  @SkipThrottle()
   @UseGuards(ApiKeyGuard)
   @Post()
   record(

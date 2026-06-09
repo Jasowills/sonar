@@ -115,7 +115,7 @@ SDK-specific:
 - **Web analytics** — page views, sessions, referrers, device/OS breakdown
 - **Frustration detection** — rage clicks, dead clicks, hover hesitation, scroll chaos, with severity scoring
 - **Smart screenshots** — viewport captures with adaptive quality, priority queue, sent on frustration signals and errors
-- **Session recording** — mouse position, scroll, click, and resize events with velocity-based adaptive sampling
+- **Session recording** — mouse position, scroll, click, and resize events with velocity-based adaptive sampling; optional video capture via MediaRecorder + canvas, stored in Cloudinary
 - **Incident management** — creation, timeline updates, ownership, severity levels
 - **Alert routing** — email, Slack, and webhook channels with rule-based triggers
 - **Status pages** — public pages with real-time service state, per-page service selection

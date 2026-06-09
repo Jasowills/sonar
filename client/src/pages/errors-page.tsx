@@ -72,7 +72,11 @@ export function ErrorsPage() {
                           ? 'bg-[var(--dot-healthy)]'
                           : 'bg-[var(--dot-degraded)]'
                     }`}
+                    aria-hidden="true"
                   />
+                  <span className="sr-only">
+                    {group.status === 'OPEN' ? 'Open' : group.status === 'RESOLVED' ? 'Resolved' : group.status}
+                  </span>
                   <p className="truncate text-sm font-medium text-[var(--text-main)]">
                     {group.title}
                   </p>

@@ -11,6 +11,8 @@ input AddIncidentUpdateInput {
 
 input AddStatusPageServiceInput {
   displayName: String
+  groupName: String
+  isVisible: Boolean
   serviceId: String!
   sortOrder: Int
   statusPageId: String!
@@ -69,7 +71,10 @@ type AnalyticsOverviewResult {
   avgSessionDuration: Int
   bounceRate: Float!
   topPages: [TopPageResult!]!
+  totalDeadClicks: Int!
+  totalErrors: Int!
   totalPageViews: Int!
+  totalRageClicks: Int!
   uniqueVisitors: Int!
 }
 
@@ -102,6 +107,7 @@ type AnalyticsSessionModel {
   totalRageClicks: Int!
   userAgent: String
   userIntent: String
+  videoUrl: String
   visitorId: String
 }
 
@@ -374,6 +380,7 @@ type Mutation {
   updateProject(input: UpdateProjectInput!): ProjectModel!
   updateService(input: UpdateServiceInput!): ServiceModel!
   updateStatusPage(input: UpdateStatusPageInput!): StatusPageModel!
+  updateStatusPageService(input: UpdateStatusPageServiceInput!): Boolean!
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceModel!
 }
 
@@ -452,7 +459,7 @@ type Query {
   projects(workspaceSlug: String): [ProjectModel!]!
   services(projectSlug: String): [ServiceModel!]!
   statusPage(id: String!): StatusPageDetailModel
-  statusPageBySlug(slug: String!): StatusPageDetailModel
+  statusPageBySlug(slug: String!, workspaceSlug: String!): StatusPageDetailModel
   statusPages: [StatusPageModel!]!
   unreadNotificationCount: Int!
   workspaces: [WorkspaceModel!]!
@@ -498,7 +505,9 @@ input RevokeApiKeyInput {
 
 type ServiceHealthModel {
   displayName: String
+  groupName: String
   id: ID!
+  isVisible: Boolean!
   latencyMs: Int
   name: String!
   serviceId: String!
@@ -522,9 +531,13 @@ type SourceResult {
 }
 
 type StatusPageDetailModel {
+  brandColor: String
   createdAt: DateTime!
+  faviconUrl: String
+  footerText: String
   headline: String
   id: ID!
+  logoUrl: String
   name: String!
   projectId: String
   services: [ServiceHealthModel!]!
@@ -532,18 +545,24 @@ type StatusPageDetailModel {
   updatedAt: DateTime!
   visibility: String!
   workspaceId: String!
+  workspaceSlug: String!
 }
 
 type StatusPageModel {
+  brandColor: String
   createdAt: DateTime!
+  faviconUrl: String
+  footerText: String
   headline: String
   id: ID!
+  logoUrl: String
   name: String!
   projectId: String
   slug: String!
   updatedAt: DateTime!
   visibility: String!
   workspaceId: String!
+  workspaceSlug: String!
 }
 
 type TopPageResult {
@@ -614,10 +633,23 @@ input UpdateServiceInput {
 }
 
 input UpdateStatusPageInput {
+  brandColor: String
+  faviconUrl: String
+  footerText: String
   headline: String
   id: String!
+  logoUrl: String
   name: String
   visibility: String
+}
+
+input UpdateStatusPageServiceInput {
+  displayName: String
+  groupName: String
+  isVisible: Boolean
+  serviceId: String!
+  sortOrder: Int
+  statusPageId: String!
 }
 
 input UpdateWorkspaceInput {

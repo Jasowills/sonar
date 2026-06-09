@@ -35,6 +35,32 @@ async function loadHtml2canvas() {
   }
 }
 
+export async function ensureHtml2canvas(): Promise<boolean> {
+  await loadHtml2canvas()
+  return html2canvasRef !== null
+}
+
+export async function captureViewport(): Promise<string | null> {
+  if (!html2canvasRef) return null
+  try {
+    const q = adaptiveQuality()
+    const scale = Math.min(window.devicePixelRatio || 1, q > 0.5 ? 2 : 1)
+    const result = await html2canvasRef(document.documentElement, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      x: window.scrollX,
+      y: window.scrollY,
+      useCORS: true,
+      scale,
+      logging: false,
+    })
+    const dataUrl = typeof result === 'string' ? result : 'toDataURL' in result ? result.toDataURL('image/jpeg') : ''
+    return dataUrl.slice(0, 500_000) || null
+  } catch {
+    return null
+  }
+}
+
 type InternalScreenshotOptions = {
   enabled: boolean
   quality: number

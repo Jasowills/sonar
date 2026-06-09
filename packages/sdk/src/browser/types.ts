@@ -18,9 +18,17 @@ export type AutoTrackOptions = {
   clickTracking?: boolean
 }
 
+export type VideoRecorderOptions = {
+  enabled?: boolean
+  fps?: number
+  quality?: number
+  maxWidth?: number
+}
+
 export type SessionRecorderOptions = {
   enabled?: boolean
   sampleIntervalMs?: number
+  video?: boolean | VideoRecorderOptions
 }
 
 export type ScreenshotOptions = {

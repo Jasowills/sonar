@@ -48,6 +48,8 @@ export function AlertsPage() {
   const [ruleChannelId, setRuleChannelId] = useState('')
   const [mutationError, setMutationError] = useState<string[] | null>(null)
 
+  const [deletingChannelId, setDeletingChannelId] = useState<string | null>(null)
+
   if (channelsLoading || rulesLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -92,14 +94,18 @@ export function AlertsPage() {
   }
 
   const handleDeleteChannel = async (id: string) => {
-    if (window.confirm('Delete this channel?')) {
-      try {
-        await deleteChannel(id)
-        setMutationError(null)
-      } catch (err) {
-        setMutationError(parseGraphqlError(err))
-      }
+    setDeletingChannelId(id)
+  }
+
+  const confirmDeleteChannel = async () => {
+    if (!deletingChannelId) return
+    try {
+      await deleteChannel(deletingChannelId)
+      setMutationError(null)
+    } catch (err) {
+      setMutationError(parseGraphqlError(err))
     }
+    setDeletingChannelId(null)
   }
 
   const handleCreateRule = async (e: React.FormEvent) => {
@@ -217,12 +223,16 @@ export function AlertsPage() {
                   <p className="text-xs text-[var(--text-muted)]">{channel.destination}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-xs">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    channel.isEnabled ? 'bg-[var(--dot-healthy)]' : 'bg-[var(--dot-down)]'
-                  }`}
-                />
+                <div className="flex items-center gap-3 text-xs">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      channel.isEnabled ? 'bg-[var(--dot-healthy)]' : 'bg-[var(--dot-down)]'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">
+                    {channel.isEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
                 <span className="border border-[var(--border-soft)] bg-[var(--surface-panel-soft)] px-2 py-1 text-[var(--text-muted)]">
                   {channel.type}
                 </span>
@@ -335,9 +345,43 @@ export function AlertsPage() {
                 className={`mt-1 h-2 w-2 rounded-full ${
                   rule.isEnabled ? 'bg-[var(--dot-healthy)]' : 'bg-[var(--dot-down)]'
                 }`}
+                aria-hidden="true"
               />
+              <span className="sr-only">
+                {rule.isEnabled ? 'Enabled' : 'Disabled'}
+              </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete channel confirmation */}
+      {deletingChannelId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm border border-[var(--border-soft)] bg-[var(--surface-page)]">
+            <div className="border-b border-[var(--border-soft)] px-5 py-4">
+              <p className="text-sm font-semibold text-[var(--text-main)]">Delete channel</p>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-sm text-[var(--text-muted)]">
+                Are you sure you want to delete this alert channel? This action cannot be undone.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setDeletingChannelId(null)}
+                  className="border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteChannel}
+                  className="border border-[var(--dot-down)] px-4 py-2 text-sm text-[var(--dot-down)] hover:bg-[var(--dot-down)]/10"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

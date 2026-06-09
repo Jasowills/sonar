@@ -180,7 +180,6 @@ export class ErrorsService {
   }
 
   private emitErrorEvent(errorGroupId: string, title: string, projectId?: string) {
-    console.log(`[ErrorsService] emit SSE error_created groupId=${errorGroupId} title="${title}" projectId=${projectId ?? '-'}`);
     this.events.emit({
       type: 'error_created',
       data: { errorGroupId, title },
@@ -207,10 +206,7 @@ export class ErrorsService {
       where: { workspaceId: project.workspaceId },
       select: { userId: true },
     });
-    console.log(`[ErrorsService] createErrorNotifications: ${memberships.length} members in workspace ${project.workspaceId}`);
-
     for (const m of memberships) {
-      console.log(`[ErrorsService] create notification for user ${m.userId}`);
       try {
         await this.notifications.create({
           type: 'error_created',
@@ -220,7 +216,6 @@ export class ErrorsService {
           userId: m.userId,
           workspaceId: project.workspaceId,
         });
-        console.log(`[ErrorsService] notification created for user ${m.userId}`);
       } catch (err) {
         console.error(`[ErrorsService] failed to create notification for user ${m.userId}:`, err);
       }
