@@ -7,8 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { mapPrismaError } from '../shared/prisma-errors';
 import { fallbackErrorGroups } from '../shared/fallback-data';
-import { ErrorEventModel } from './models/error-event.model';
-import { ErrorGroupModel, ErrorGroupStatus } from './models/error-group.model';
+import { ErrorEventModel, ErrorEventsConnection } from './models/error-event.model';
+import { ErrorGroupModel, ErrorGroupsConnection, ErrorGroupStatus } from './models/error-group.model';
 import { RecordErrorInput } from './errors.inputs';
 
 const ERROR_STATUSES = ['OPEN', 'RESOLVED', 'IGNORED'] as const;
@@ -33,6 +33,7 @@ type FindParams = {
   environmentKey?: string;
   serviceId?: string;
   limit?: number;
+  cursor?: string;
 };
 
 @Injectable()
@@ -43,8 +44,9 @@ export class ErrorsService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  async findAll(params: FindParams): Promise<ErrorGroupModel[]> {
+  async findAll(params: FindParams): Promise<ErrorGroupsConnection> {
     const limit = params.limit ?? 20;
+    const take = limit + 1;
 
     try {
       const where: Prisma.ErrorGroupWhereInput = {};
@@ -59,21 +61,54 @@ export class ErrorsService {
         where.serviceId = params.serviceId;
       }
 
-      const groups = await this.prisma.errorGroup.findMany({
+      const orderBy: Prisma.ErrorGroupOrderByWithRelationInput[] = [
+        { lastSeenAt: 'desc' },
+        { id: 'desc' },
+      ];
+
+      let groups: Array<ErrorGroupViewSource & { environment: { name: string }; service: { name: string } | null }>;
+
+      if (params.cursor) {
+        const cursorGroup = await this.prisma.errorGroup.findUnique({
+          where: { id: params.cursor },
+          select: { lastSeenAt: true, id: true },
+        });
+        if (cursorGroup) {
+          where.OR = [
+            { lastSeenAt: { lt: cursorGroup.lastSeenAt } },
+            {
+              lastSeenAt: cursorGroup.lastSeenAt,
+              id: { lt: cursorGroup.id },
+            },
+          ];
+        }
+      }
+
+      groups = await this.prisma.errorGroup.findMany({
         where,
         include: { environment: true, service: true },
-        orderBy: { lastSeenAt: 'desc' },
-        take: limit,
+        orderBy,
+        take,
       });
 
-      if (groups.length > 0) {
-        return groups.map((g) => this.toView(g));
+      if (groups.length === 0) {
+        return { items: [], nextCursor: null };
       }
-    } catch {
-      // noop
-    }
 
-    return [];
+      const hasMore = groups.length > limit;
+      const items = hasMore ? groups.slice(0, limit) : groups;
+      const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+      return {
+        items: items.map((g) => this.toView(g)),
+        nextCursor,
+      };
+    } catch {
+      return {
+        items: fallbackErrorGroups.map((g) => this.toView(g)),
+        nextCursor: null,
+      };
+    }
   }
 
   async findByFingerprint(
@@ -257,24 +292,56 @@ export class ErrorsService {
     }
   }
 
-  async findEvents(groupId: string): Promise<ErrorEventModel[]> {
+  async findEvents(
+    groupId: string,
+    limit?: number,
+    cursor?: string,
+  ): Promise<ErrorEventsConnection> {
+    const take = (limit ?? 50) + 1;
+
     try {
+      const where: Prisma.ErrorEventWhereInput = { errorGroupId: groupId };
+      if (cursor) {
+        const cursorEvent = await this.prisma.errorEvent.findUnique({
+          where: { id: cursor },
+          select: { occurredAt: true, id: true },
+        });
+        if (cursorEvent) {
+          where.OR = [
+            { occurredAt: { lt: cursorEvent.occurredAt } },
+            {
+              occurredAt: cursorEvent.occurredAt,
+              id: { lt: cursorEvent.id },
+            },
+          ];
+        }
+      }
+
       const events = await this.prisma.errorEvent.findMany({
-        where: { errorGroupId: groupId },
-        orderBy: { occurredAt: 'desc' },
+        where,
+        orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+        take,
       });
-      return events.map((e) => ({
-        id: e.id,
-        eventKey: e.eventKey,
-        message: e.message,
-        stack: e.stack,
-        release: e.release,
-        metadata: e.metadata !== null && e.metadata !== undefined ? String(e.metadata) : null,
-        occurredAt: e.occurredAt,
-        errorGroupId: e.errorGroupId,
-      }));
+
+      const hasMore = events.length > (limit ?? 50);
+      const items = hasMore ? events.slice(0, limit ?? 50) : events;
+      const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+      return {
+        items: items.map((e) => ({
+          id: e.id,
+          eventKey: e.eventKey,
+          message: e.message,
+          stack: e.stack,
+          release: e.release,
+          metadata: e.metadata !== null && e.metadata !== undefined ? String(e.metadata) : null,
+          occurredAt: e.occurredAt,
+          errorGroupId: e.errorGroupId,
+        })),
+        nextCursor,
+      };
     } catch {
-      return [];
+      return { items: [], nextCursor: null };
     }
   }
 

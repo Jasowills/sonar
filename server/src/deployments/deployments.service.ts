@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../shared/prisma-errors';
-import { DeploymentModel, DeploymentStatus } from './models/deployment.model';
+import { DeploymentModel, DeploymentStatus, DeploymentsConnection } from './models/deployment.model';
 import { RecordDeploymentInput } from './deployments.inputs';
 
 const DEPLOYMENT_STATUSES = [
@@ -29,14 +29,16 @@ type FindParams = {
   environmentKey?: string;
   projectSlug?: string;
   limit?: number;
+  cursor?: string;
 };
 
 @Injectable()
 export class DeploymentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(params: FindParams): Promise<DeploymentModel[]> {
+  async findAll(params: FindParams): Promise<DeploymentsConnection> {
     const limit = params.limit ?? 20;
+    const take = limit + 1;
 
     try {
       const environmentWhere: Prisma.EnvironmentWhereInput = {};
@@ -47,24 +49,49 @@ export class DeploymentsService {
         environmentWhere.project = { slug: params.projectSlug };
       }
 
+      const where: Prisma.DeploymentWhereInput =
+        Object.keys(environmentWhere).length > 0
+          ? { environment: environmentWhere }
+          : {};
+
+      if (params.cursor) {
+        const cursorDeployment = await this.prisma.deployment.findUnique({
+          where: { id: params.cursor },
+          select: { deployedAt: true, id: true },
+        });
+        if (cursorDeployment) {
+          where.OR = [
+            { deployedAt: { lt: cursorDeployment.deployedAt } },
+            {
+              deployedAt: cursorDeployment.deployedAt,
+              id: { lt: cursorDeployment.id },
+            },
+          ];
+        }
+      }
+
       const deployments = await this.prisma.deployment.findMany({
-        where:
-          Object.keys(environmentWhere).length > 0
-            ? { environment: environmentWhere }
-            : {},
+        where,
         include: { environment: true, service: true },
-        orderBy: { deployedAt: 'desc' },
-        take: limit,
+        orderBy: [{ deployedAt: 'desc' }, { id: 'desc' }],
+        take,
       });
 
-      if (deployments.length > 0) {
-        return deployments.map((deployment) => this.toView(deployment));
+      if (deployments.length === 0) {
+        return { items: [], nextCursor: null };
       }
-    } catch {
-      // noop
-    }
 
-    return [];
+      const hasMore = deployments.length > limit;
+      const items = hasMore ? deployments.slice(0, limit) : deployments;
+      const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+      return {
+        items: items.map((deployment) => this.toView(deployment)),
+        nextCursor,
+      };
+    } catch {
+      return { items: [], nextCursor: null };
+    }
   }
 
   async record(input: RecordDeploymentInput, projectId?: string): Promise<DeploymentModel> {

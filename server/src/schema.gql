@@ -2,6 +2,30 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AIAnalyticsInsight {
+  description: String!
+  metric: String
+  severity: InsightSeverity!
+  title: String!
+  value: Float
+}
+
+type AIErrorSummary {
+  confidence: Float
+  createdAt: DateTime!
+  errorGroupId: String!
+  suggestedFix: String
+  summary: String!
+}
+
+type AISessionInsight {
+  frustrationHotspots: [String!]!
+  keyMoments: [String!]!
+  recommendation: String
+  sessionId: String!
+  summary: String!
+}
+
 input AddIncidentUpdateInput {
   actorUserId: String
   body: String!
@@ -46,6 +70,13 @@ type AlertRuleModel {
   workspaceId: String!
 }
 
+type AlertTriage {
+  alertRuleId: String!
+  context: String
+  frequency: String
+  suggestion: String
+}
+
 type AnalyticsEventModel {
   category: String
   fingerprint: String
@@ -76,6 +107,17 @@ type AnalyticsOverviewResult {
   totalPageViews: Int!
   totalRageClicks: Int!
   uniqueVisitors: Int!
+}
+
+type AnalyticsReport {
+  analyzedAt: DateTime!
+  behaviorInsights: [String!]!
+  executiveSummary: String!
+  frustrationHotspots: [String!]!
+  periodLabel: String!
+  recommendations: [String!]!
+  trafficInsights: [String!]!
+  workspaceId: String!
 }
 
 type AnalyticsSessionModel {
@@ -132,6 +174,21 @@ type ApiKeyWithSecret {
   name: String!
   prefix: String!
   projectId: String!
+}
+
+type CheckResultModel {
+  checkedAt: DateTime!
+  errorMessage: String
+  id: String!
+  latencyMs: Int
+  monitorId: String!
+  state: String!
+  statusCode: Int
+}
+
+type CheckResultsConnection {
+  items: [CheckResultModel!]!
+  nextCursor: String
 }
 
 input CreateAlertChannelInput {
@@ -231,12 +288,26 @@ type DeploymentModel {
   version: String!
 }
 
+type DeploymentRef {
+  deployedAt: DateTime!
+  deployedBy: String!
+  environmentName: String!
+  id: String!
+  serviceName: String
+  version: String!
+}
+
 """Lifecycle state of a recorded deployment."""
 enum DeploymentStatus {
   FAILED
   IN_PROGRESS
   ROLLED_BACK
   SUCCEEDED
+}
+
+type DeploymentsConnection {
+  items: [DeploymentModel!]!
+  nextCursor: String
 }
 
 type EnvironmentModel {
@@ -256,6 +327,11 @@ type ErrorEventModel {
   occurredAt: DateTime!
   release: String
   stack: String
+}
+
+type ErrorEventsConnection {
+  items: [ErrorEventModel!]!
+  nextCursor: String
 }
 
 type ErrorGroupModel {
@@ -280,9 +356,39 @@ enum ErrorGroupStatus {
   RESOLVED
 }
 
+type ErrorGroupsConnection {
+  items: [ErrorGroupModel!]!
+  nextCursor: String
+}
+
 type EventTypeDistResult {
   count: Int!
   type: String!
+}
+
+type HealthTrend {
+  analyzedAt: DateTime!
+  avgLatencyMs: Float
+  confidence: Float
+  dataPoints: Int
+  failureRate: Float
+  monitorId: String!
+  projectedHoursToCritical: Float
+  slope: Float!
+  trend: HealthTrendDirection!
+}
+
+enum HealthTrendDirection {
+  DECLINING
+  IMPROVING
+  STABLE
+}
+
+type IncidentCorrelation {
+  incidentId: String!
+  narrative: String!
+  relatedDeployments: [DeploymentRef!]!
+  relatedErrorGroups: [String!]
 }
 
 type IncidentModel {
@@ -303,6 +409,14 @@ type IncidentModel {
   workspaceId: String!
 }
 
+type IncidentRootCause {
+  incidentId: String!
+  narrative: String!
+  possibleCauses: [String!]!
+  relatedDeploymentId: String
+  suggestions: [String!]!
+}
+
 type IncidentUpdateModel {
   actorUserId: String
   body: String!
@@ -310,6 +424,12 @@ type IncidentUpdateModel {
   id: String!
   incidentId: String!
   kind: String!
+}
+
+enum InsightSeverity {
+  CRITICAL
+  INFO
+  WARNING
 }
 
 type MemberModel {
@@ -359,11 +479,14 @@ type Mutation {
   deleteAlertChannel(id: String!): AlertChannelModel!
   deleteAlertRule(id: String!): AlertRuleModel!
   deleteEnvironment(id: String!): Boolean!
+  deleteIncident(id: String!): Boolean!
   deleteMonitor(id: String!): Boolean!
   deleteProject(id: String!): Boolean!
   deleteService(id: String!): Boolean!
   deleteStatusPage(id: String!): Boolean!
   deleteWorkspace(id: String!): Boolean!
+  generateIncidentRootCause(incidentId: String!): IncidentRootCause
+  generateWeeklyBrief(workspaceId: String!): String
   markAllNotificationsRead: Boolean!
   markNotificationRead(id: String!): Boolean!
   recordDeployment(input: RecordDeploymentInput!): DeploymentModel!
@@ -436,7 +559,9 @@ type ProjectModel {
 type Query {
   alertChannels: [AlertChannelModel!]!
   alertRules: [AlertRuleModel!]!
+  alertTriage(alertRuleId: String!): AlertTriage
   analyticsEventTypes(projectId: String!): [EventTypeDistResult!]!
+  analyticsInsights(timeRange: String, workspaceId: String!): [AIAnalyticsInsight!]
   analyticsOverview(projectId: String!): AnalyticsOverviewResult!
   analyticsPageViews(from: String, projectId: String!, to: String): [PageViewTimeSeriesPoint!]!
   analyticsSession(id: String!): AnalyticsSessionModel
@@ -444,14 +569,20 @@ type Query {
   analyticsSessions(limit: Int, projectId: String!): [AnalyticsSessionModel!]!
   analyticsSources(projectId: String!): [SourceResult!]!
   analyticsTopPages(limit: Int, projectId: String!): [TopPageResult!]!
+  analyzeSession(sessionId: String!): AISessionInsight
   apiKeys(projectId: String!): [ApiKeyModel!]!
-  deployments(environmentKey: String, limit: Int, projectSlug: String): [DeploymentModel!]!
+  checkResults(cursor: String, limit: Int, monitorId: String!): CheckResultsConnection!
+  deployments(cursor: String, environmentKey: String, limit: Int, projectSlug: String): DeploymentsConnection!
   environments(projectSlug: String): [EnvironmentModel!]!
-  errorEvents(groupId: String!): [ErrorEventModel!]!
-  errorGroups(environmentKey: String, limit: Int, projectSlug: String, serviceId: String): [ErrorGroupModel!]!
+  errorEvents(cursor: String, groupId: String!, limit: Int): ErrorEventsConnection!
+  errorGroups(cursor: String, environmentKey: String, limit: Int, projectSlug: String, serviceId: String): ErrorGroupsConnection!
+  generateAnalyticsAnalysis(timeRange: String, workspaceId: String!): AnalyticsReport
+  incidentCorrelation(incidentId: String!): IncidentCorrelation
   incidentUpdates(incidentId: String!): [IncidentUpdateModel!]!
   incidents: [IncidentModel!]!
   members(workspaceId: String!): [MemberModel!]!
+  monitor(id: String!): MonitorModel
+  monitorHealthTrend(monitorId: String!): HealthTrend
   monitors(environmentKey: String, projectSlug: String): [MonitorModel!]!
   notifications(limit: Int, workspaceId: String): [NotificationModel!]!
   overviewSnapshot(workspaceSlug: String): OverviewSnapshotModel!
@@ -461,6 +592,7 @@ type Query {
   statusPage(id: String!): StatusPageDetailModel
   statusPageBySlug(slug: String!, workspaceSlug: String!): StatusPageDetailModel
   statusPages: [StatusPageModel!]!
+  summarizeErrorGroup(errorGroupId: String!): AIErrorSummary
   unreadNotificationCount: Int!
   workspaces: [WorkspaceModel!]!
 }

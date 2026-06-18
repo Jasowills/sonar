@@ -12,7 +12,7 @@ export function PageNotice({ variant, message, onRetry }: PageNoticeProps) {
   const isError = variant === 'error'
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 border border-[var(--border-soft)] bg-[var(--surface-panel)] px-6 py-16 text-center">
+    <div className="flex flex-col items-center justify-center gap-4 border border-[var(--border-soft)] px-6 py-16 text-center">
       {variant === 'loading' ? (
         <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-strong)]" />
       ) : (

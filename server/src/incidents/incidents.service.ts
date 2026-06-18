@@ -133,6 +133,16 @@ export class IncidentsService {
     }
   }
 
+  async remove(id: string): Promise<boolean> {
+    try {
+      await this.prisma.incidentUpdate.deleteMany({ where: { incidentId: id } });
+      await this.prisma.incident.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      mapPrismaError(error);
+    }
+  }
+
   async findUpdates(incidentId: string): Promise<IncidentUpdateModel[]> {
     try {
       return await this.prisma.incidentUpdate.findMany({

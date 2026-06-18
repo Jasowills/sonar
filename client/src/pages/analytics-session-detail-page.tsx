@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useAnalyticsSession, useAnalyticsSessionEvents } from '@/lib/api'
+import { useAnalyticsSession, useAnalyticsSessionEvents, useAnalyzeSession } from '@/lib/api'
 import type { AnalyticsEvent } from '@/lib/api'
 import { PageNotice } from '@/components/page-notice'
 import {
@@ -14,12 +14,20 @@ import {
   Camera,
   AlertTriangle,
   Flame,
-  HelpCircle,
   Watch,
-  ChevronUp,
-  ChevronDown,
   X,
   ExternalLink,
+  Sparkles,
+  Loader2,
+  Clock,
+  Users,
+  Monitor,
+  Smartphone,
+  Laptop,
+  Globe,
+  Eye,
+  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react'
 
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,18 +54,55 @@ function severityColor(severity: number | null): string {
   return 'text-[var(--text-soft)]'
 }
 
-function severityBg(severity: number | null): string {
-  if (severity === null || severity === 0) return ''
-  if (severity >= 0.8) return 'border-red-500/30 bg-red-500/5'
-  if (severity >= 0.5) return 'border-amber-500/30 bg-amber-500/5'
-  return ''
+function severityBadge(severity: number | null): { bg: string; border: string; text: string; label: string } {
+  if (severity === null || severity === 0) return { bg: '', border: '', text: '', label: '' }
+  if (severity >= 0.8) return { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-500', label: `${(severity * 100).toFixed(0)}%` }
+  if (severity >= 0.5) return { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-500', label: `${(severity * 100).toFixed(0)}%` }
+  return { bg: 'bg-[var(--surface-panel-soft)]', border: 'border-[var(--border-soft)]', text: 'text-[var(--text-soft)]', label: `${(severity * 100).toFixed(0)}%` }
+}
+
+function typeColor(type: string): { icon: string; ring: string; bg: string } {
+  if (type === 'page_view') return { icon: 'text-blue-500', ring: 'ring-blue-500/20', bg: 'bg-blue-500/10' }
+  if (type === 'click' || type === 'recording_click') return { icon: 'text-emerald-500', ring: 'ring-emerald-500/20', bg: 'bg-emerald-500/10' }
+  if (type === 'scroll' || type === 'recording_scroll') return { icon: 'text-teal-500', ring: 'ring-teal-500/20', bg: 'bg-teal-500/10' }
+  if (type === 'form_submit') return { icon: 'text-violet-500', ring: 'ring-violet-500/20', bg: 'bg-violet-500/10' }
+  if (type === 'console_error') return { icon: 'text-red-500', ring: 'ring-red-500/20', bg: 'bg-red-500/10' }
+  if (type === 'screenshot' || type === 'recording_mouse') return { icon: 'text-zinc-500', ring: 'ring-zinc-500/20', bg: 'bg-zinc-500/10' }
+  if (type.startsWith('frustration_')) return { icon: 'text-amber-500', ring: 'ring-amber-500/20', bg: 'bg-amber-500/10' }
+  return { icon: 'text-[var(--text-muted)]', ring: 'ring-[var(--border-soft)]', bg: 'bg-[var(--surface-panel)]' }
+}
+
+function groupEvents(events: AnalyticsEvent[]): Array<{ events: AnalyticsEvent[] }> {
+  const groups: Array<{ events: AnalyticsEvent[] }> = []
+  for (const event of events) {
+    const last = groups[groups.length - 1]
+    if (last && last.events[0].type === event.type) {
+      last.events.push(event)
+    } else {
+      groups.push({ events: [event] })
+    }
+  }
+  return groups
+}
+
+function formatOffset(startMs: number, eventMs: number): string {
+  const diff = eventMs - startMs
+  if (diff < 0) return '0s'
+  if (diff < 1000) return `+${diff}ms`
+  const sec = diff / 1000
+  if (sec < 60) return `+${sec.toFixed(1)}s`
+  const m = Math.floor(sec / 60)
+  const s = Math.round(sec % 60)
+  return `+${m}m ${s}s`
 }
 
 export function AnalyticsSessionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: session, isLoading: loadingSession, isError: sessionError } = useAnalyticsSession(id)
   const { data: events, isLoading: loadingEvents } = useAnalyticsSessionEvents(id)
+  const { data: aiInsight, isLoading: aiLoading } = useAnalyzeSession(id)
   const [expandedScreenshot, setExpandedScreenshot] = useState<string | null>(null)
+  const [showAi, setShowAi] = useState(false)
 
   if (loadingSession || loadingEvents) {
     return <PageNotice variant="loading" message="Loading session…" />
@@ -67,156 +112,361 @@ export function AnalyticsSessionDetailPage() {
     return <PageNotice variant="error" message="Session not found." />
   }
 
+  const DeviceIcon = session.device === 'mobile' ? Smartphone : session.device === 'tablet' ? Laptop : Monitor
+
   return (
     <div className="space-y-6">
-      {/* Session header */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="border border-[var(--border-soft)] px-5 py-4">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Visitor</p>
-          <p className="mt-1 font-mono text-sm text-[var(--text-main)]">
-            {session.visitorId ? session.visitorId.slice(0, 16) + '…' : '-'}
-          </p>
-        </div>
-        <div className="border border-[var(--border-soft)] px-5 py-4">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Duration</p>
-          <p className="mt-1 text-sm text-[var(--text-main)]">
-            {session.duration ? formatDuration(session.duration) : '-'}
-          </p>
-        </div>
-        <div className="border border-[var(--border-soft)] px-5 py-4">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Device</p>
-          <p className="mt-1 text-sm text-[var(--text-main)]">
-            {[session.browser, session.os, session.device].filter(Boolean).join(' · ') || '-'}
-          </p>
-        </div>
-        <div className="border border-[var(--border-soft)] px-5 py-4">
-          <p className="text-xs font-medium text-[var(--text-muted)]">Page views</p>
-          <p className="mt-1 text-sm text-[var(--text-main)]">{session.pageViews}</p>
-        </div>
+      <div className="flex items-center gap-3">
+        <a
+          href="/app/analytics/sessions"
+          className="inline-flex items-center gap-1.5 rounded border border-[var(--border-soft)] px-3 py-1.5 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back
+        </a>
+        <ChevronRight className="h-3 w-3 text-[var(--text-soft)]" />
+        <span className="font-mono text-xs text-[var(--text-main)]">
+          {session.visitorId ? session.visitorId.slice(0, 12) : 'Anonymous'}
+        </span>
       </div>
 
-      {/* Frustration score card */}
-      {(session.frustrationScore != null || session.hasFrustrationSignals) && (
-        <div className="flex flex-wrap gap-4">
-          {session.frustrationScore != null && (
-            <div className={`border px-5 py-4 ${session.frustrationScore >= 50 ? 'border-red-500/30 bg-red-500/5' : session.frustrationScore >= 20 ? 'border-amber-500/30 bg-amber-500/5' : 'border-[var(--border-soft)]'}`}>
-              <p className="text-xs font-medium text-[var(--text-muted)]">Frustration score</p>
-              <p className={`mt-1 text-2xl font-bold ${session.frustrationScore >= 50 ? 'text-red-500' : session.frustrationScore >= 20 ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>
-                {session.frustrationScore}/100
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {session.videoUrl ? (
+            <div className="overflow-hidden rounded-lg border border-[var(--border-soft)] bg-black">
+              <video
+                src={session.videoUrl}
+                controls
+                className="w-full"
+                preload="metadata"
+              >
+                Your browser does not support video playback.
+              </video>
+            </div>
+          ) : (
+            <div className="flex aspect-video flex-col items-center justify-center rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--surface-panel-soft)]">
+                <Eye className="h-6 w-6 text-[var(--text-muted)]" />
+              </div>
+              <p className="mt-4 text-sm font-medium text-[var(--text-muted)]">No recording available</p>
+              <p className="mt-1 max-w-xs text-center text-xs text-[var(--text-soft)]">
+                Session recordings require visual tracking to be enabled in the SDK.
               </p>
             </div>
           )}
-          {session.userIntent && (
-            <div className="border border-[var(--border-soft)] px-5 py-4">
-              <p className="text-xs font-medium text-[var(--text-muted)]">Intent</p>
-              <p className="mt-1 text-sm font-medium text-[var(--text-main)]">{session.userIntent}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="border border-[var(--border-soft)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Session</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-main)]">
+              {session.duration ? formatDuration(session.duration) : '-'}
+            </p>
+            <p className="text-xs text-[var(--text-soft)]">Duration</p>
+          </div>
+
+          <div className="border border-[var(--border-soft)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Pages</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-main)]">{session.pageViews}</p>
+            <p className="text-xs text-[var(--text-soft)]">Page views</p>
+          </div>
+
+          <div className="border border-[var(--border-soft)] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Frustration</p>
+            <p className={`mt-2 text-2xl font-bold ${
+              (session.frustrationScore ?? 0) >= 50 ? 'text-red-500' :
+              (session.frustrationScore ?? 0) >= 20 ? 'text-amber-500' :
+              'text-[var(--text-main)]'
+            }`}>
+              {session.frustrationScore != null ? `${session.frustrationScore}/100` : '-'}
+            </p>
+            <p className="text-xs text-[var(--text-soft)]">Score</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="border border-[var(--border-soft)] p-3 text-center">
+              <Flame className="mx-auto mb-1 h-4 w-4 text-amber-500" />
+              <p className="text-sm font-bold text-[var(--text-main)]">{session.totalRageClicks || 0}</p>
+              <p className="text-[10px] text-[var(--text-soft)]">Rage</p>
             </div>
-          )}
-          {session.totalRageClicks > 0 && (
-            <div className="border border-[var(--border-soft)] px-5 py-4">
-              <p className="text-xs font-medium text-[var(--text-muted)]">Rage clicks</p>
-              <p className="mt-1 text-lg font-bold text-[var(--text-main)]">{session.totalRageClicks}</p>
+            <div className="border border-[var(--border-soft)] p-3 text-center">
+              <AlertTriangle className="mx-auto mb-1 h-4 w-4 text-amber-500" />
+              <p className="text-sm font-bold text-[var(--text-main)]">{session.totalDeadClicks || 0}</p>
+              <p className="text-[10px] text-[var(--text-soft)]">Dead</p>
             </div>
-          )}
-          {session.totalDeadClicks > 0 && (
-            <div className="border border-[var(--border-soft)] px-5 py-4">
-              <p className="text-xs font-medium text-[var(--text-muted)]">Dead clicks</p>
-              <p className="mt-1 text-lg font-bold text-[var(--text-main)]">{session.totalDeadClicks}</p>
+            <div className="border border-[var(--border-soft)] p-3 text-center">
+              <AlertCircle className="mx-auto mb-1 h-4 w-4 text-red-500" />
+              <p className="text-sm font-bold text-[var(--text-main)]">{session.totalErrors || 0}</p>
+              <p className="text-[10px] text-[var(--text-soft)]">Errors</p>
             </div>
-          )}
-          {session.totalErrors > 0 && (
-            <div className="border border-[var(--border-soft)] px-5 py-4">
-              <p className="text-xs font-medium text-[var(--text-muted)]">Errors</p>
-              <p className="mt-1 text-lg font-bold text-red-500">{session.totalErrors}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="border border-[var(--border-soft)]">
+          <div className="border-b border-[var(--border-soft)] px-5 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Visitor</p>
+          </div>
+          <div className="divide-y divide-[var(--border-soft)] text-xs">
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Visitor ID</span>
+              <span className="font-mono text-[var(--text-main)]">
+                {session.visitorId ? session.visitorId.slice(0, 24) : '-'}
+              </span>
             </div>
-          )}
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Entry page</span>
+              <span className="max-w-[200px] truncate text-[var(--text-main)]" title={session.startUrl}>
+                {session.startUrl ? new URL(session.startUrl).pathname : '-'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Referrer</span>
+              <span className="text-[var(--text-main)]">{session.referrer || 'Direct'}</span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Started</span>
+              <span className="text-[var(--text-main)]">
+                {new Date(session.startedAt).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-[var(--border-soft)]">
+          <div className="border-b border-[var(--border-soft)] px-5 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Device & Environment</p>
+          </div>
+          <div className="divide-y divide-[var(--border-soft)] text-xs">
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Browser</span>
+              <span className="inline-flex items-center gap-1.5 text-[var(--text-main)]">
+                <Globe className="h-3 w-3 text-[var(--text-soft)]" />
+                {session.browser || '-'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">OS</span>
+              <span className="text-[var(--text-main)]">{session.os || '-'}</span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Device</span>
+              <span className="inline-flex items-center gap-1.5 text-[var(--text-main)]">
+                <DeviceIcon className="h-3 w-3 text-[var(--text-soft)]" />
+                {session.device || '-'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3">
+              <span className="text-[var(--text-muted)]">Country</span>
+              <span className="text-[var(--text-main)]">{session.country || '-'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {aiLoading && (
+        <div className="flex items-center gap-3 border border-[var(--border-soft)] px-5 py-4">
+          <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
+          <p className="text-sm text-[var(--text-muted)]">Analyzing session...</p>
         </div>
       )}
 
-      {/* Session video */}
-      {session.videoUrl && (
+      {aiInsight && !showAi && (
+        <button
+          onClick={() => setShowAi(true)}
+          className="flex w-full items-center justify-between border border-[var(--border-soft)] px-5 py-4 text-left transition-colors hover:bg-[var(--surface-panel-soft)]"
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[var(--dot-degraded)]" />
+            <span className="text-sm font-semibold text-[var(--text-main)]">AI session analysis</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
+        </button>
+      )}
+
+      {aiInsight && showAi && (
         <div className="border border-[var(--border-soft)]">
-          <div className="border-b border-[var(--border-soft)] px-5 py-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
-              <Activity className="h-4 w-4 text-[var(--text-muted)]" />
-              Session recording
-            </h3>
+          <div className="flex items-center justify-between border-b border-[var(--border-soft)] px-5 py-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[var(--dot-degraded)]" />
+              <p className="text-sm font-semibold text-[var(--text-main)]">AI session analysis</p>
+            </div>
+            <button
+              onClick={() => setShowAi(false)}
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            >
+              Hide
+            </button>
           </div>
           <div className="px-5 py-4">
-            <video
-              src={session.videoUrl}
-              controls
-              className="w-full max-h-[480px] rounded border border-[var(--border-soft)] bg-black"
-              preload="metadata"
-            >
-              Your browser does not support video playback.
-            </video>
+            <p className="text-sm leading-6 text-[var(--text-muted)]">{aiInsight.summary}</p>
+
+            {aiInsight.keyMoments.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-soft)]">Key moments</p>
+                <ul className="space-y-1">
+                  {aiInsight.keyMoments.map((m, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-[var(--text-muted)]">
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" />
+                      {m}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {aiInsight.frustrationHotspots.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-soft)]">Frustration hotspots</p>
+                <ul className="space-y-1">
+                  {aiInsight.frustrationHotspots.map((h, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-red-500">
+                      <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500" />
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {aiInsight.recommendation && (
+              <div className="mt-4 border-l-2 border-[var(--dot-degraded)] bg-[var(--surface-panel-soft)] px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-soft)]">Recommendation</p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">{aiInsight.recommendation}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Event timeline */}
       <div className="border border-[var(--border-soft)]">
         <div className="border-b border-[var(--border-soft)] px-5 py-4">
-          <h3 className="text-sm font-semibold text-[var(--text-main)]">Event timeline</h3>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
+            <Activity className="h-4 w-4 text-[var(--text-muted)]" />
+            Event timeline
+            <span className="ml-1 text-xs font-normal text-[var(--text-soft)]">({events?.length ?? 0} events)</span>
+          </h3>
         </div>
         {events && events.length > 0 ? (
-          <div className="divide-y divide-[var(--border-soft)]">
-            {events.map((event) => {
-              const EventIcon = typeIcons[event.type] ?? Activity
-              const payload = parsePayload(event.payload)
+          <div className="relative">
+            {(() => {
+              const sessionStart = new Date(session.startedAt).getTime()
+              const sessionEnd = session.duration
+                ? sessionStart + session.duration * 1000
+                : new Date(events[events.length - 1].timestamp).getTime()
+              const totalSpan = sessionEnd - sessionStart
 
               return (
-                <div
-                  key={event.id}
-                  className={`px-5 py-4 ${event.severity && event.severity >= 0.5 ? severityBg(event.severity) : ''}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border ${event.severity && event.severity >= 0.5 ? 'border-amber-500/30 bg-amber-500/10' : 'border-[var(--border-soft)] bg-[var(--surface-panel)]'}`}>
-                      <EventIcon className={`h-3.5 w-3.5 ${severityColor(event.severity)}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[var(--text-main)]">
-                          {formatEventType(event.type)}
-                        </span>
-                        {event.severity != null && event.severity > 0 && (
-                          <span className={`text-[10px] font-semibold uppercase ${severityColor(event.severity)}`}>
-                            {(event.severity * 100).toFixed(0)}%
-                          </span>
-                        )}
-                        {event.name && (
-                          <span className="max-w-[300px] truncate text-xs text-[var(--text-muted)]">
-                            {event.name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                        {event.url}
-                      </p>
-                      {event.fingerprint && (
-                        <p className="mt-0.5 text-[10px] font-mono text-[var(--text-soft)]">
-                          fp: {event.fingerprint}
-                        </p>
-                      )}
-                      {renderEventPayload(event.type, payload, setExpandedScreenshot)}
-                      <p className="mt-1 text-[10px] text-[var(--text-soft)]">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </p>
-                    </div>
+                <div className="border-b border-[var(--border-soft)] px-5 py-3">
+                  <div className="relative h-2 rounded-full bg-[var(--surface-panel-soft)]">
+                    {events.map((event) => {
+                      const pct = Math.max(0, Math.min(100, ((new Date(event.timestamp).getTime() - sessionStart) / totalSpan) * 100))
+                      const tc = typeColor(event.type)
+                      return (
+                        <div
+                          key={event.id}
+                          className={`absolute top-0 h-2 w-2 -translate-x-1/2 rounded-full ${tc.icon.replace('text-', 'bg-')}`}
+                          style={{ left: `${pct}%` }}
+                          title={`${formatEventType(event.type)} at ${new Date(event.timestamp).toLocaleTimeString()}`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="mt-1.5 flex justify-between text-[9px] text-[var(--text-soft)]">
+                    <span>+0s</span>
+                    <span>{session.duration ? formatDuration(session.duration) : ''}</span>
                   </div>
                 </div>
               )
-            })}
+            })()}
+
+            <div className="absolute left-[37px] top-[61px] h-full w-px bg-[var(--border-soft)]" />
+            <div className="divide-y divide-[var(--border-soft)]">
+              {groupEvents(events).map((group) => {
+                const first = group.events[0]
+                const EventIcon = typeIcons[first.type] ?? Activity
+                const payload = parsePayload(first.payload)
+                const badge = severityBadge(first.severity)
+                const tc = typeColor(first.type)
+                const sessionStart = new Date(session.startedAt).getTime()
+                const isGroup = group.events.length > 1
+
+                return (
+                  <div
+                    key={first.id}
+                    className={`relative flex gap-4 px-5 py-3 transition-colors hover:bg-[var(--surface-panel-soft)] ${badge.bg}`}
+                  >
+                    <div className={`relative z-10 mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ring-2 ${tc.ring} ${tc.bg}`}>
+                      <EventIcon className={`h-3.5 w-3.5 ${tc.icon}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-[var(--text-main)]">
+                          {formatEventType(first.type)}
+                        </span>
+                        {isGroup && (
+                          <span className="rounded bg-[var(--surface-panel-soft)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-soft)]">
+                            &times;{group.events.length}
+                          </span>
+                        )}
+                        {badge.label && (
+                          <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${badge.bg} ${badge.text}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        <span className="ml-auto text-[10px] tabular-nums text-[var(--text-soft)]">
+                          {formatOffset(sessionStart, new Date(first.timestamp).getTime())}
+                        </span>
+                      </div>
+                      {!isGroup && first.name && (
+                        <p className="mt-0.5 truncate text-[11px] font-medium text-[var(--text-muted)]">
+                          {first.name}
+                        </p>
+                      )}
+                      {!isGroup && (
+                        <p className="mt-0.5 truncate text-[10px] text-[var(--text-soft)]">
+                          {first.url}
+                        </p>
+                      )}
+                      {!isGroup && first.fingerprint && (
+                        <p className="mt-0.5 text-[9px] font-mono text-[var(--text-soft)]">
+                          fp: {first.fingerprint}
+                        </p>
+                      )}
+                      {!isGroup && renderEventPayload(first.type, payload, setExpandedScreenshot)}
+                      {isGroup && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {group.events.slice(0, 5).map((ev) => (
+                            <p key={ev.id} className="truncate text-[10px] text-[var(--text-soft)]">
+                              {formatOffset(sessionStart, new Date(ev.timestamp).getTime())}
+                              {ev.url && <> &middot; {ev.url}</>}
+                            </p>
+                          ))}
+                          {group.events.length > 5 && (
+                            <p className="text-[10px] text-[var(--text-muted)]">
+                              +{group.events.length - 5} more
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         ) : (
-          <div className="px-5 py-8 text-center text-sm text-[var(--text-muted)]">
-            No events recorded in this session.
+          <div className="flex flex-col items-center justify-center px-5 py-16">
+            <Activity className="mb-3 h-8 w-8 text-[var(--text-muted)]" />
+            <p className="text-sm font-medium text-[var(--text-main)]">No events recorded</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              This session has no tracked events.
+            </p>
           </div>
         )}
       </div>
 
-      {/* Screenshot lightbox */}
       {expandedScreenshot && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-8"
@@ -295,7 +545,6 @@ function renderEventPayload(
         </div>
       )
     }
-    // Fallback: show raw if data URL is missing
     return (
       <pre className="mt-2 max-h-24 overflow-auto rounded border border-[var(--border-soft)] bg-[var(--surface-panel)] p-2 text-[10px] text-[var(--text-muted)]">
         {JSON.stringify(payload, null, 2).slice(0, 300)}
@@ -311,17 +560,13 @@ function renderEventPayload(
     const duration = first && last ? last.t - first.t : 0
     return (
       <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-[var(--text-muted)]">
-        <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">
-          {count} samples
-        </span>
+        <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">{count} samples</span>
         {duration > 0 && (
-          <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">
-            {(duration / 1000).toFixed(1)}s span
-          </span>
+          <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">{(duration / 1000).toFixed(1)}s span</span>
         )}
         {first && (
           <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">
-            ({Math.round(first.x)}, {Math.round(first.y)}) → ({Math.round(last?.x ?? 0)}, {Math.round(last?.y ?? 0)})
+            ({Math.round(first.x)}, {Math.round(first.y)}) &rarr; ({Math.round(last?.x ?? 0)}, {Math.round(last?.y ?? 0)})
           </span>
         )}
       </div>
@@ -334,13 +579,9 @@ function renderEventPayload(
     const target = typeof payload.target === 'string' ? payload.target : null
     return (
       <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-[var(--text-muted)]">
-        <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">
-          ({x}, {y})
-        </span>
+        <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">({x}, {y})</span>
         {target && (
-          <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">
-            {target}
-          </span>
+          <span className="rounded border border-[var(--border-soft)] px-1.5 py-0.5">{target}</span>
         )}
       </div>
     )
@@ -350,9 +591,7 @@ function renderEventPayload(
     const x = typeof payload.x === 'number' ? Math.round(payload.x) : '?'
     const y = typeof payload.y === 'number' ? Math.round(payload.y) : '?'
     return (
-      <div className="mt-1 text-[10px] text-[var(--text-muted)]">
-        Scroll to ({x}, {y})
-      </div>
+      <div className="mt-1 text-[10px] text-[var(--text-muted)]">Scroll to ({x}, {y})</div>
     )
   }
 
@@ -364,11 +603,7 @@ function renderEventPayload(
             Element: <span className="font-mono">{payload.element as string}</span>
           </div>
         )}
-        {payload.count && (
-          <div className="text-[10px] text-[var(--text-muted)]">
-            Count: {payload.count as number}
-          </div>
-        )}
+        {payload.count && <div className="text-[10px] text-[var(--text-muted)]">Count: {payload.count as number}</div>}
         {payload.text && (
           <div className="text-[10px] text-[var(--text-muted)]">
             Text: &ldquo;{payload.text as string}&rdquo;
@@ -378,7 +613,6 @@ function renderEventPayload(
     )
   }
 
-  // Default: show payload as formatted JSON
   const formatted = JSON.stringify(payload, null, 2).slice(0, 300)
   if (!formatted || formatted === '{}') return null
 

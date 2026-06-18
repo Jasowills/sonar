@@ -1,7 +1,7 @@
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
-import { ErrorEventModel } from './models/error-event.model';
-import { ErrorGroupModel } from './models/error-group.model';
+import { ErrorEventModel, ErrorEventsConnection } from './models/error-event.model';
+import { ErrorGroupModel, ErrorGroupsConnection } from './models/error-group.model';
 import { RecordErrorInput, UpdateErrorGroupStatusInput } from './errors.inputs';
 import { ErrorsService } from './errors.service';
 
@@ -9,7 +9,7 @@ import { ErrorsService } from './errors.service';
 export class ErrorsResolver {
   constructor(private readonly errorsService: ErrorsService) {}
 
-  @Query(() => [ErrorGroupModel])
+  @Query(() => ErrorGroupsConnection)
   errorGroups(
     @Args('projectSlug', { type: () => String, nullable: true })
     projectSlug?: string,
@@ -19,18 +19,27 @@ export class ErrorsResolver {
     serviceId?: string,
     @Args('limit', { type: () => Int, nullable: true })
     limit?: number,
-  ): Promise<ErrorGroupModel[]> {
+    @Args('cursor', { type: () => String, nullable: true })
+    cursor?: string,
+  ): Promise<ErrorGroupsConnection> {
     return this.errorsService.findAll({
       projectSlug,
       environmentKey,
       serviceId,
       limit,
+      cursor,
     });
   }
 
-  @Query(() => [ErrorEventModel])
-  errorEvents(@Args('groupId') groupId: string): Promise<ErrorEventModel[]> {
-    return this.errorsService.findEvents(groupId);
+  @Query(() => ErrorEventsConnection)
+  errorEvents(
+    @Args('groupId') groupId: string,
+    @Args('limit', { type: () => Int, nullable: true })
+    limit?: number,
+    @Args('cursor', { type: () => String, nullable: true })
+    cursor?: string,
+  ): Promise<ErrorEventsConnection> {
+    return this.errorsService.findEvents(groupId, limit, cursor);
   }
 
   @Mutation(() => ErrorGroupModel)

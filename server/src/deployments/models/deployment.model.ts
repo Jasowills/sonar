@@ -38,3 +38,12 @@ export class DeploymentModel {
   @Field(() => String, { nullable: true })
   serviceName?: string | null;
 }
+
+@ObjectType()
+export class DeploymentsConnection {
+  @Field(() => [DeploymentModel])
+  items!: DeploymentModel[];
+
+  @Field(() => String, { nullable: true })
+  nextCursor?: string | null;
+}

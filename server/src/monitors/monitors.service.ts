@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapPrismaError } from '../shared/prisma-errors';
 import { MonitorModel } from './models/monitor.model';
+import { CheckResultModel, CheckResultsConnection } from './models/check-result.model';
 import { CreateMonitorInput, UpdateMonitorInput } from './monitors.inputs';
 
 /** The minimum shape needed to render a monitor as a flat view model. */
@@ -59,6 +60,65 @@ export class MonitorsService {
     }
 
     return [];
+  }
+
+  async findById(id: string): Promise<MonitorModel | null> {
+    try {
+      const monitor = await this.prisma.monitor.findUnique({
+        where: { id },
+        include: {
+          service: { include: { project: true } },
+          environment: true,
+          checkResults: {
+            orderBy: { checkedAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      if (!monitor) return null;
+      return this.toView(monitor);
+    } catch {
+      return null;
+    }
+  }
+
+  async getCheckResults(
+    monitorId: string,
+    limit: number,
+    cursor?: string,
+  ): Promise<CheckResultsConnection> {
+    try {
+      const where: Prisma.CheckResultWhereInput = { monitorId };
+      if (cursor) {
+        where.id = { lt: cursor };
+      }
+
+      const results = await this.prisma.checkResult.findMany({
+        where,
+        orderBy: { checkedAt: 'desc' },
+        take: limit + 1,
+      });
+
+      const hasMore = results.length > limit;
+      const items = hasMore ? results.slice(0, limit) : results;
+      const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+
+      return {
+        items: items.map((r) => ({
+          id: r.id,
+          state: r.state,
+          statusCode: r.statusCode,
+          latencyMs: r.latencyMs,
+          errorMessage: r.errorMessage,
+          checkedAt: r.checkedAt,
+          monitorId: r.monitorId,
+        })),
+        nextCursor,
+      };
+    } catch {
+      return { items: [], nextCursor: null };
+    }
   }
 
   async create(input: CreateMonitorInput): Promise<MonitorModel> {

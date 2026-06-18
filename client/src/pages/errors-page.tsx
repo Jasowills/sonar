@@ -1,22 +1,15 @@
 import { useState } from 'react'
-import { Activity, CheckCircle2, EyeOff } from 'lucide-react'
+import { Activity, CheckCircle2, EyeOff, Sparkles, Loader2 } from 'lucide-react'
 import {
   useErrorGroups,
   useErrorEvents,
   useUpdateErrorGroupStatus,
+  useErrorSummary,
 } from '@/lib/api'
 import { useSelectedProject } from '@/hooks/use-selected-project'
 import { timeAgo } from '@/lib/format'
 import { PageNotice } from '@/components/page-notice'
 import { sanitizeError } from '@/lib/utils'
-
-type ErrorEvent = {
-  id: string
-  message: string
-  stack: string | null
-  release: string | null
-  occurredAt: string
-}
 
 export function ErrorsPage() {
   const { project } = useSelectedProject()
@@ -114,12 +107,45 @@ export function ErrorsPage() {
             </div>
             {isExpanded && (
               <div className="border-t border-[var(--border-soft)]">
+                <div className="px-5 py-4">
+                  <ErrorSummaryBadge groupId={group.id} />
+                </div>
                 <ErrorGroupEvents groupId={group.id} />
               </div>
             )}
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function ErrorSummaryBadge({ groupId }: { groupId: string }) {
+  const { data: summary, isLoading } = useErrorSummary(groupId)
+
+  if (isLoading) return null
+
+  if (!summary) return null
+
+  return (
+    <div className="mb-3 border border-[var(--border-soft)] bg-[var(--surface-panel-soft)] px-4 py-3">
+      <div className="flex items-start gap-2">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[var(--text-main)]">{summary.summary}</p>
+          {summary.suggestedFix && (
+            <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+              <span className="font-medium text-[var(--text-soft)]">Fix: </span>
+              {summary.suggestedFix}
+            </p>
+          )}
+          {summary.confidence !== null && (
+            <p className="mt-1 text-[10px] text-[var(--text-soft)]">
+              Confidence: {Math.round(summary.confidence * 100)}%
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

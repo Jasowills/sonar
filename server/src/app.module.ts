@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AlertsModule } from './alerts/alerts.module';
@@ -51,6 +52,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
         return { user, req };
       },
     }),
+    AiModule,
     SystemModule,
     WorkspacesModule,
     ProjectsModule,

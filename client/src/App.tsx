@@ -2,32 +2,10 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { AppShell } from '@/components/app-shell'
+
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import { EventProvider } from '@/lib/event-source'
 import { ToastProvider } from '@/lib/toast-store'
-import { AlertsPage } from '@/pages/alerts-page'
-import { AnalyticsPage } from '@/pages/analytics-page'
-import { AnalyticsSessionsPage } from '@/pages/analytics-sessions-page'
-import { AnalyticsSessionDetailPage } from '@/pages/analytics-session-detail-page'
-import { AuthCallbackPage } from '@/pages/auth-callback-page'
-import { DashboardPage } from '@/pages/dashboard-page'
-import { DeploymentsPage } from '@/pages/deployments-page'
-import { DocsPage } from '@/pages/docs-page'
-import { EnvironmentsPage } from '@/pages/environments-page'
-import { ErrorsPage } from '@/pages/errors-page'
-import { IncidentDetailPage } from '@/pages/incident-detail-page'
-import { IncidentsPage } from '@/pages/incidents-page'
-import { LoginPage } from '@/pages/login-page'
-import { MonitorsPage } from '@/pages/monitors-page'
-import { NotFoundPage } from '@/pages/not-found-page'
-import { PrivacyPage } from '@/pages/privacy-page'
-import { PublicStatusPage } from '@/pages/public-status-page'
-import { ServicesPage } from '@/pages/services-page'
-import { SettingsPage } from '@/pages/settings-page'
-import { StatusPageDetailPage } from '@/pages/status-page-detail-page'
-import { StatusPagesPage } from '@/pages/status-pages-page'
-import { TeamPage } from '@/pages/team-page'
-import { TermsPage } from '@/pages/terms-page'
 import { SEO } from '@/lib/seo'
 import { useTheme } from '@/hooks/use-theme'
 
@@ -37,16 +15,94 @@ const LandingPage = lazy(() =>
   })),
 )
 
+const LoginPage = lazy(() =>
+  import('@/pages/login-page').then((m) => ({ default: m.LoginPage })),
+)
+const AuthCallbackPage = lazy(() =>
+  import('@/pages/auth-callback-page').then((m) => ({ default: m.AuthCallbackPage })),
+)
+const PrivacyPage = lazy(() =>
+  import('@/pages/privacy-page').then((m) => ({ default: m.PrivacyPage })),
+)
+const TermsPage = lazy(() =>
+  import('@/pages/terms-page').then((m) => ({ default: m.TermsPage })),
+)
+const DocsPage = lazy(() =>
+  import('@/pages/docs-page').then((m) => ({ default: m.DocsPage })),
+)
+const PublicStatusPage = lazy(() =>
+  import('@/pages/public-status-page').then((m) => ({ default: m.PublicStatusPage })),
+)
+const DashboardPage = lazy(() =>
+  import('@/pages/dashboard-page').then((m) => ({ default: m.DashboardPage })),
+)
+const MonitorsPage = lazy(() =>
+  import('@/pages/monitors-page').then((m) => ({ default: m.MonitorsPage })),
+)
+const MonitorDetailPage = lazy(() =>
+  import('@/pages/monitor-detail-page').then((m) => ({ default: m.MonitorDetailPage })),
+)
+const AnalyticsPage = lazy(() =>
+  import('@/pages/analytics-page').then((m) => ({ default: m.AnalyticsPage })),
+)
+const AnalyticsSessionsPage = lazy(() =>
+  import('@/pages/analytics-sessions-page').then((m) => ({ default: m.AnalyticsSessionsPage })),
+)
+const AnalyticsSessionDetailPage = lazy(() =>
+  import('@/pages/analytics-session-detail-page').then((m) => ({ default: m.AnalyticsSessionDetailPage })),
+)
+const ErrorsPage = lazy(() =>
+  import('@/pages/errors-page').then((m) => ({ default: m.ErrorsPage })),
+)
+const IncidentsPage = lazy(() =>
+  import('@/pages/incidents-page').then((m) => ({ default: m.IncidentsPage })),
+)
+const IncidentDetailPage = lazy(() =>
+  import('@/pages/incident-detail-page').then((m) => ({ default: m.IncidentDetailPage })),
+)
+const DeploymentsPage = lazy(() =>
+  import('@/pages/deployments-page').then((m) => ({ default: m.DeploymentsPage })),
+)
+const AlertsPage = lazy(() =>
+  import('@/pages/alerts-page').then((m) => ({ default: m.AlertsPage })),
+)
+const ServicesPage = lazy(() =>
+  import('@/pages/services-page').then((m) => ({ default: m.ServicesPage })),
+)
+const EnvironmentsPage = lazy(() =>
+  import('@/pages/environments-page').then((m) => ({ default: m.EnvironmentsPage })),
+)
+const StatusPagesPage = lazy(() =>
+  import('@/pages/status-pages-page').then((m) => ({ default: m.StatusPagesPage })),
+)
+const StatusPageDetailPage = lazy(() =>
+  import('@/pages/status-page-detail-page').then((m) => ({ default: m.StatusPageDetailPage })),
+)
+const TeamPage = lazy(() =>
+  import('@/pages/team-page').then((m) => ({ default: m.TeamPage })),
+)
+const SettingsPage = lazy(() =>
+  import('@/pages/settings-page').then((m) => ({ default: m.SettingsPage })),
+)
+const NotFoundPage = lazy(() =>
+  import('@/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
+)
+
 const pageMeta: Record<string, { title: string; eyebrow: string; description: string }> = {
   '/app/dashboard': {
     title: 'Dashboard',
-    eyebrow: 'Workspace',
-    description: 'Uptime, monitors, and recent activity at a glance.',
+    eyebrow: '',
+    description: '',
   },
   '/app/monitors': {
     title: 'Monitors',
     eyebrow: 'Checks',
     description: 'HTTP checks grouped by service and environment.',
+  },
+  '/app/monitors/:id': {
+    title: 'Monitor',
+    eyebrow: 'Checks',
+    description: 'Monitor detail and check history.',
   },
   '/app/errors': {
     title: 'Errors',
@@ -162,22 +218,18 @@ function AppContent() {
 
   if (location.pathname.startsWith('/status/')) {
     const statusParams = getStatusPathParams(location.pathname)
-    if (!statusParams) {
-      return (
+    return (
+      <Suspense fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}>
         <Routes>
           <Route path="/status/:workspaceSlug/:slug" element={<PublicStatusPage />} />
         </Routes>
-      )
-    }
-    return (
-      <Routes>
-        <Route path="/status/:workspaceSlug/:slug" element={<PublicStatusPage />} />
-      </Routes>
+      </Suspense>
     )
   }
 
   if (isPublicMarketingRoute) {
     return (
+      <Suspense fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}>
       <Routes>
         <Route
           path="/login"
@@ -237,6 +289,7 @@ function AppContent() {
           }
         />
       </Routes>
+      </Suspense>
     )
   }
 
@@ -254,33 +307,36 @@ function AppContent() {
       theme={theme}
       onToggleTheme={toggleTheme}
     >
-      <Routes>
-        <Route path="/app/dashboard" element={<DashboardPage />} />
-        <Route path="/app/monitors" element={<MonitorsPage />} />
-        <Route path="/app/analytics" element={<AnalyticsPage />} />
-        <Route path="/app/analytics/sessions" element={<AnalyticsSessionsPage />} />
-        <Route path="/app/analytics/sessions/:id" element={<AnalyticsSessionsPage />} />
-        <Route path="/app/errors" element={<ErrorsPage />} />
-        <Route path="/app/incidents" element={<IncidentsPage />} />
-        <Route path="/app/incidents/:id" element={<IncidentDetailPage />} />
-        <Route path="/app/deployments" element={<DeploymentsPage />} />
-        <Route path="/app/integrations" element={<AlertsPage />} />
-        <Route path="/app/services" element={<ServicesPage />} />
-        <Route path="/app/environments" element={<EnvironmentsPage />} />
-        <Route path="/app/status-pages" element={<StatusPagesPage />} />
-        <Route path="/app/status-pages/:id" element={<StatusPageDetailPage />} />
-        <Route path="/app/team" element={<TeamPage />} />
-        <Route path="/app/settings" element={<SettingsPage />} />
+      <Suspense fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}>
+        <Routes>
+          <Route path="/app/dashboard" element={<DashboardPage />} />
+          <Route path="/app/monitors" element={<MonitorsPage />} />
+          <Route path="/app/monitors/:id" element={<MonitorDetailPage />} />
+          <Route path="/app/analytics" element={<AnalyticsPage />} />
+          <Route path="/app/analytics/sessions" element={<AnalyticsSessionsPage />} />
+          <Route path="/app/analytics/sessions/:id" element={<AnalyticsSessionDetailPage />} />
+          <Route path="/app/errors" element={<ErrorsPage />} />
+          <Route path="/app/incidents" element={<IncidentsPage />} />
+          <Route path="/app/incidents/:id" element={<IncidentDetailPage />} />
+          <Route path="/app/deployments" element={<DeploymentsPage />} />
+          <Route path="/app/integrations" element={<AlertsPage />} />
+          <Route path="/app/services" element={<ServicesPage />} />
+          <Route path="/app/environments" element={<EnvironmentsPage />} />
+          <Route path="/app/status-pages" element={<StatusPagesPage />} />
+          <Route path="/app/status-pages/:id" element={<StatusPageDetailPage />} />
+          <Route path="/app/team" element={<TeamPage />} />
+          <Route path="/app/settings" element={<SettingsPage />} />
 
-        {/* Redirect old paths */}
-        <Route path="/app/overview" element={<Navigate replace to="/app/dashboard" />} />
-        <Route path="/app/traces" element={<Navigate replace to="/app/errors" />} />
-        <Route path="/app/connections" element={<Navigate replace to="/app/services" />} />
-        <Route path="/app/alerts" element={<Navigate replace to="/app/integrations" />} />
+          {/* Redirect old paths */}
+          <Route path="/app/overview" element={<Navigate replace to="/app/dashboard" />} />
+          <Route path="/app/traces" element={<Navigate replace to="/app/errors" />} />
+          <Route path="/app/connections" element={<Navigate replace to="/app/services" />} />
+          <Route path="/app/alerts" element={<Navigate replace to="/app/integrations" />} />
 
-        <Route path="/app" element={<Navigate replace to="/app/dashboard" />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+          <Route path="/app" element={<Navigate replace to="/app/dashboard" />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   )
 }

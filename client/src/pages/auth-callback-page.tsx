@@ -1,17 +1,15 @@
 import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '@/hooks/use-auth'
+import { useSearchParams } from 'react-router-dom'
+import { setToken } from '@/hooks/use-auth'
 import { MarketingLayout } from '@/components/marketing-layout'
 
 export function AuthCallbackPage() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { resolveAuth } = useAuth()
 
   useEffect(() => {
     const code = searchParams.get('code')
     if (!code) {
-      navigate('/login', { replace: true })
+      window.location.href = '/login'
       return
     }
 
@@ -32,13 +30,13 @@ export function AuthCallbackPage() {
         return res.json()
       })
       .then((data) => {
-        resolveAuth(data.token)
-        navigate('/app/overview', { replace: true })
+        setToken(data.token)
+        window.location.href = '/app/overview'
       })
       .catch(() => {
-        navigate('/login', { replace: true })
+        window.location.href = '/login'
       })
-  }, [navigate, searchParams])
+  }, [searchParams])
 
   return (
     <MarketingLayout>

@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { parseGraphqlError } from '@/lib/utils'
-import { ArrowLeft, AlertTriangle, Check, MessageSquare, Siren } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, Check, MessageSquare, Siren, Trash2, GitBranch, Lightbulb, Loader2 } from 'lucide-react'
 import {
   useIncidents,
   useIncidentUpdates,
   useResolveIncident,
   useAddIncidentUpdate,
+  useDeleteIncident,
+  useIncidentCorrelation,
+  useGenerateIncidentRootCause,
 } from '@/lib/api'
+import type { IncidentRootCause } from '@/lib/api'
 
 const SEVERITY_STYLES: Record<string, { color: string }> = {
   CRITICAL: { color: '#dc2626' },
@@ -32,11 +36,15 @@ export function IncidentDetailPage() {
   const { data: updates, isLoading: updatesLoading } = useIncidentUpdates(id ?? '')
   const { mutateAsync: resolveIncident } = useResolveIncident()
   const { mutateAsync: addUpdate } = useAddIncidentUpdate()
+  const { mutateAsync: deleteIncident } = useDeleteIncident()
   const [updateKind, setUpdateKind] = useState('note')
   const [updateBody, setUpdateBody] = useState('')
   const [resolveSummary, setResolveSummary] = useState('')
   const [showResolve, setShowResolve] = useState(false)
   const [mutationError, setMutationError] = useState<string[] | null>(null)
+  const { data: correlation } = useIncidentCorrelation(id)
+  const { mutateAsync: generateRootCause, isPending: rootCauseLoading } = useGenerateIncidentRootCause()
+  const [rootCause, setRootCause] = useState<IncidentRootCause | null>(null)
 
   if (!incident) {
     return (
@@ -117,7 +125,19 @@ export function IncidentDetailPage() {
             {incident.status}
           </span>
         </div>
-        <h2 className="text-lg font-semibold text-[var(--text-main)]">{incident.title}</h2>
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold text-[var(--text-main)]">{incident.title}</h2>
+          <button
+            onClick={async () => {
+              await deleteIncident(incident.id)
+              navigate('/app/incidents')
+            }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center text-[var(--text-muted)] hover:text-[var(--dot-down)]"
+            title="Delete incident"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
         {incident.summary && (
           <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{incident.summary}</p>
         )}
@@ -126,6 +146,96 @@ export function IncidentDetailPage() {
           {incident.resolvedAt ? ` · Resolved ${new Date(incident.resolvedAt).toLocaleString()}` : ''}
         </p>
       </div>
+
+      {correlation && (
+        <div className="mb-6 border border-[var(--border-soft)] p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <GitBranch className="h-4 w-4 text-[var(--text-muted)]" />
+            <p className="text-sm font-semibold text-[var(--text-main)]">
+              Deployment correlation
+            </p>
+          </div>
+          <p className="text-sm leading-6 text-[var(--text-muted)]">{correlation.narrative}</p>
+          {correlation.relatedDeployments.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs font-medium text-[var(--text-soft)]">
+                Related deployments
+              </p>
+              {correlation.relatedDeployments.map((d) => (
+                <p key={d.id} className="text-xs text-[var(--text-muted)]">
+                  {d.version} · {d.environmentName}{d.serviceName ? ` · ${d.serviceName}` : ''} · {new Date(d.deployedAt).toLocaleString()}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!rootCause && !rootCauseLoading && (
+        <div className="mb-6">
+          <button
+            onClick={async () => {
+              const result = await generateRootCause(incident.id)
+              if (result) setRootCause(result)
+            }}
+            className="flex items-center gap-2 border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Analyze root cause with AI
+          </button>
+        </div>
+      )}
+
+      {rootCauseLoading && (
+        <div className="mb-6 flex items-center gap-3 border border-[var(--border-soft)] px-5 py-4">
+          <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
+          <p className="text-sm text-[var(--text-muted)]">Analyzing incident data…</p>
+        </div>
+      )}
+
+      {rootCause && (
+        <div className="mb-6 border border-[var(--border-soft)] p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-[var(--dot-degraded)]" />
+            <p className="text-sm font-semibold text-[var(--text-main)]">
+              Root cause analysis
+            </p>
+          </div>
+          <p className="text-sm leading-6 text-[var(--text-muted)]">{rootCause.narrative}</p>
+
+          {rootCause.possibleCauses.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-[var(--text-soft)]">
+                Possible causes
+              </p>
+              <ul className="list-disc space-y-1 pl-4">
+                {rootCause.possibleCauses.map((cause, i) => (
+                  <li key={i} className="text-xs text-[var(--text-muted)]">{cause}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {rootCause.suggestions.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-[var(--text-soft)]">
+                Suggestions
+              </p>
+              <ul className="list-disc space-y-1 pl-4">
+                {rootCause.suggestions.map((s, i) => (
+                  <li key={i} className="text-xs text-[var(--text-muted)]">{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {rootCause.relatedDeploymentId && (
+            <p className="mt-3 text-xs text-[var(--text-muted)]">
+              Related deployment ID: {rootCause.relatedDeploymentId}
+            </p>
+          )}
+        </div>
+      )}
 
       {incident.status === 'OPEN' && (
         <div className="mb-6 space-y-3">

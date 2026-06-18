@@ -1,6 +1,7 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { MonitorModel } from './models/monitor.model';
+import { CheckResultModel, CheckResultsConnection } from './models/check-result.model';
 import { CreateMonitorInput, UpdateMonitorInput } from './monitors.inputs';
 import { MonitorsService } from './monitors.service';
 
@@ -16,6 +17,22 @@ export class MonitorsResolver {
     environmentKey?: string,
   ): Promise<MonitorModel[]> {
     return this.monitorsService.findAll(projectSlug, environmentKey);
+  }
+
+  @Query(() => MonitorModel, { nullable: true })
+  monitor(
+    @Args('id', { type: () => String }) id: string,
+  ): Promise<MonitorModel | null> {
+    return this.monitorsService.findById(id);
+  }
+
+  @Query(() => CheckResultsConnection)
+  checkResults(
+    @Args('monitorId', { type: () => String }) monitorId: string,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+    @Args('cursor', { type: () => String, nullable: true }) cursor?: string,
+  ): Promise<CheckResultsConnection> {
+    return this.monitorsService.getCheckResults(monitorId, limit ?? 50, cursor);
   }
 
   @Mutation(() => MonitorModel)

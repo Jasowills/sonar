@@ -30,6 +30,7 @@ export function Modal({
           <p className="text-sm font-semibold text-[var(--text-main)]">{title}</p>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="flex h-7 w-7 items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
           >
             <X className="h-4 w-4" />

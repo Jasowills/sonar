@@ -4,7 +4,7 @@ import { parseGraphqlError } from '@/lib/utils'
 import {
   ArrowLeft, Plus, Trash2, ExternalLink, ChevronUp, ChevronDown,
   Eye, EyeOff, CheckCircle, Clock, XCircle, AlertTriangle,
-  Layout, Palette, Type, Hash, Image,
+  Layout, Palette, Type, Hash, Image, Server,
 } from 'lucide-react'
 import {
   useStatusPage,
@@ -69,12 +69,12 @@ function StatusPagePreview({ data, clientUrl }: { data: StatusPagePreviewData; c
           Open live page
         </a>
 
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center">
           {data.logoUrl && (
             <img src={data.logoUrl} alt="" className="mx-auto mb-3 max-h-8 object-contain" />
           )}
           <h2
-            className="text-base font-semibold tracking-tight"
+            className="text-sm font-semibold tracking-tight"
             style={{
               color: data.brandColor ? 'var(--status-brand)' : 'var(--text-strong)',
             }}
@@ -82,17 +82,19 @@ function StatusPagePreview({ data, clientUrl }: { data: StatusPagePreviewData; c
             {data.name}
           </h2>
           {data.headline && (
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">{data.headline}</p>
+            <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{data.headline}</p>
           )}
         </div>
 
         <div
-          className="mb-6 border px-4 py-4 text-center"
-          style={{ borderColor: overall.color }}
+          className="mb-5 rounded-lg px-4 py-4"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${overall.color} 8%, transparent)`,
+          }}
         >
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
             <span
-              className="inline-block h-3 w-3 rounded-full"
+              className="inline-block h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: overall.color }}
               aria-hidden="true"
             />
@@ -106,33 +108,39 @@ function StatusPagePreview({ data, clientUrl }: { data: StatusPagePreviewData; c
             </span>
           </div>
           {data.updatedAt && (
-            <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">
               Updated {new Date(data.updatedAt).toLocaleString()}
             </p>
           )}
         </div>
 
         {visibleServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center border border-[var(--border-soft)] px-4 py-8">
+          <div className="flex flex-col items-center justify-center py-8">
             <AlertTriangle className="mb-2 h-5 w-5 text-[var(--text-muted)]" />
             <p className="text-[11px] text-[var(--text-muted)]">No services configured</p>
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             {Array.from(groups.entries()).map(([groupName, services]) => (
-              <div key={groupName} className="mb-4">
+              <div key={groupName}>
                 <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   {groupName}
                 </h3>
-                <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
+                <div className="overflow-hidden rounded-md border border-[var(--border-soft)]">
                   {services.map((svc) => {
                     const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
-                    const Icon = config.icon
                     return (
-                      <div key={svc.id} className="flex items-center justify-between px-3 py-2.5">
+                      <div
+                        key={svc.id}
+                        className="flex items-center justify-between border-b border-[var(--border-soft)] px-3 py-2.5 last:border-b-0"
+                      >
                         <p className="text-[11px] text-[var(--text-main)]">{svc.displayName ?? svc.name}</p>
                         <span className="flex shrink-0 items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                          <Icon className="h-3 w-3" style={{ color: config.dot }} aria-hidden="true" />
+                          <span
+                            className="inline-block h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: config.dot }}
+                            aria-hidden="true"
+                          />
                           <span className="sr-only">{config.a11yLabel}</span>
                           {config.label}
                         </span>
@@ -143,21 +151,27 @@ function StatusPagePreview({ data, clientUrl }: { data: StatusPagePreviewData; c
               </div>
             ))}
             {ungrouped.length > 0 && (
-              <div className="mb-4">
+              <div>
                 {groups.size > 0 && (
                   <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     Other Services
                   </h3>
                 )}
-                <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
+                <div className="overflow-hidden rounded-md border border-[var(--border-soft)]">
                   {ungrouped.map((svc) => {
                     const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
-                    const Icon = config.icon
                     return (
-                      <div key={svc.id} className="flex items-center justify-between px-3 py-2.5">
+                      <div
+                        key={svc.id}
+                        className="flex items-center justify-between border-b border-[var(--border-soft)] px-3 py-2.5 last:border-b-0"
+                      >
                         <p className="text-[11px] text-[var(--text-main)]">{svc.displayName ?? svc.name}</p>
                         <span className="flex shrink-0 items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                          <Icon className="h-3 w-3" style={{ color: config.dot }} aria-hidden="true" />
+                          <span
+                            className="inline-block h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: config.dot }}
+                            aria-hidden="true"
+                          />
                           <span className="sr-only">{config.a11yLabel}</span>
                           {config.label}
                         </span>
@@ -167,11 +181,11 @@ function StatusPagePreview({ data, clientUrl }: { data: StatusPagePreviewData; c
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {data.footerText && (
-          <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">{data.footerText}</p>
+          <p className="mt-5 text-center text-[10px] text-[var(--text-muted)]">{data.footerText}</p>
         )}
       </div>
     </div>
@@ -221,7 +235,7 @@ export function StatusPageDetailPage() {
   const [footerText, setFooterText] = useState('')
   const [selectedServiceId, setSelectedServiceId] = useState('')
   const [mutationError, setMutationError] = useState<string[] | null>(null)
-  const [appearanceOpen, setAppearanceOpen] = useState(false)
+
 
   const clientUrl = import.meta.env.VITE_CLIENT_URL ?? 'http://localhost:3000'
 
@@ -443,103 +457,83 @@ export function StatusPageDetailPage() {
             </div>
           </form>
 
-          <div className="border border-[var(--border-soft)]">
-            <button
-              type="button"
-              onClick={() => setAppearanceOpen(!appearanceOpen)}
-              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-[var(--surface-panel-soft)]"
-            >
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-[var(--text-muted)]" />
-                <h2 className="text-sm font-semibold text-[var(--text-main)]">Appearance</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                {!appearanceOpen && (
-                  <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                    {page.logoUrl && <Image className="h-3 w-3" />}
-                    {page.brandColor && (
-                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: page.brandColor }} />
-                    )}
-                    {page.footerText && <Type className="h-3 w-3" />}
-                    {!page.logoUrl && !page.brandColor && !page.footerText && 'Default'}
-                  </span>
-                )}
-                <ChevronDown
-                  className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${appearanceOpen ? 'rotate-180' : ''}`}
-                />
-              </div>
-            </button>
-            {appearanceOpen && (
-              <form onSubmit={handleSaveAppearance} className="border-t border-[var(--border-soft)] p-5">
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                      <Image className="h-3 w-3" />
-                      Logo URL
-                    </label>
+          <div className="border border-[var(--border-soft)] p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Palette className="h-4 w-4 text-[var(--text-muted)]" />
+              <h2 className="text-sm font-semibold text-[var(--text-main)]">Appearance</h2>
+            </div>
+            <form onSubmit={handleSaveAppearance}>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                    <Image className="h-3 w-3" />
+                    Logo URL
+                  </label>
+                  <input
+                    type="text"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none focus:border-[var(--accent)]"
+                  />
+                  {logoUrl && (
+                    <img src={logoUrl} alt="" className="mt-2 h-8 object-contain" />
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                    <Palette className="h-3 w-3" />
+                    Brand color
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={brandColor || '#ffffff'}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="h-9 w-10 cursor-pointer border border-[var(--border-soft)] bg-transparent p-0.5"
+                    />
                     <input
                       type="text"
-                      value={logoUrl}
-                      onChange={(e) => setLogoUrl(e.target.value)}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none"
-                    />
-                    {logoUrl && (
-                      <img src={logoUrl} alt="" className="mt-2 h-8 object-contain" />
-                    )}
-                  </div>
-                  <div>
-                    <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                      <Palette className="h-3 w-3" />
-                      Brand color
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={brandColor || '#ffffff'}
-                        onChange={(e) => setBrandColor(e.target.value)}
-                        className="h-9 w-10 cursor-pointer border border-[var(--border-soft)] bg-transparent p-0.5"
-                      />
-                      <input
-                        type="text"
-                        value={brandColor}
-                        onChange={(e) => setBrandColor(e.target.value)}
-                        placeholder="#ffffff"
-                        className="flex-1 border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm font-mono text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                      <Type className="h-3 w-3" />
-                      Footer text
-                    </label>
-                    <textarea
-                      value={footerText}
-                      onChange={(e) => setFooterText(e.target.value)}
-                      placeholder="Powered by Sonar"
-                      rows={2}
-                      className="w-full resize-none border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      placeholder="#ffffff"
+                      className="flex-1 border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm font-mono text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="mt-4 border border-[var(--border-soft)] px-4 py-1.5 text-xs text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)] disabled:opacity-40"
-                >
-                  {isSaving ? 'Saving…' : 'Save appearance'}
-                </button>
-              </form>
-            )}
+                <div>
+                  <label className="mb-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                    <Type className="h-3 w-3" />
+                    Footer text
+                  </label>
+                  <textarea
+                    value={footerText}
+                    onChange={(e) => setFooterText(e.target.value)}
+                    placeholder="Powered by Sonar"
+                    rows={2}
+                    className="w-full resize-none border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none focus:border-[var(--accent)]"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="mt-4 border border-[var(--border-soft)] px-4 py-1.5 text-xs text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)] disabled:opacity-40"
+              >
+                {isSaving ? 'Saving…' : 'Save appearance'}
+              </button>
+            </form>
           </div>
 
           <div className="border border-[var(--border-soft)] p-5">
             <div className="mb-4 flex items-center gap-2">
-              <Layout className="h-4 w-4 text-[var(--text-muted)]" />
+              <Server className="h-4 w-4 text-[var(--text-muted)]" />
               <h2 className="text-sm font-semibold text-[var(--text-main)]">
                 Services ({page.services.length})
               </h2>
+              <span className="ml-auto text-[10px] text-[var(--text-muted)]">
+                {page.services.filter(s => s.isVisible).length} visible
+              </span>
             </div>
 
             {sortedServices.length > 0 && (
@@ -583,7 +577,7 @@ export function StatusPageDetailPage() {
                                     handleUpdateService(svc.serviceId, { displayName: val || null })
                                   }
                                 }}
-                                className="w-28 border border-[var(--border-soft)] bg-transparent px-1.5 py-0.5 text-[11px] text-[var(--text-muted)] outline-none placeholder:text-[var(--text-soft)]"
+                                 className="w-32 border border-[var(--border-soft)] bg-transparent px-1.5 py-0.5 text-[11px] text-[var(--text-muted)] outline-none placeholder:text-[var(--text-soft)] focus:border-[var(--accent)]"
                               />
                               <input
                                 type="text"
@@ -595,7 +589,7 @@ export function StatusPageDetailPage() {
                                     handleUpdateService(svc.serviceId, { groupName: val || null })
                                   }
                                 }}
-                                className="w-24 border border-[var(--border-soft)] bg-transparent px-1.5 py-0.5 text-[11px] text-[var(--text-muted)] outline-none placeholder:text-[var(--text-soft)]"
+                                className="w-28 border border-[var(--border-soft)] bg-transparent px-1.5 py-0.5 text-[11px] text-[var(--text-muted)] outline-none placeholder:text-[var(--text-soft)] focus:border-[var(--accent)]"
                               />
                             </div>
                           </div>
@@ -664,7 +658,7 @@ export function StatusPageDetailPage() {
             <div className="border-b border-[var(--border-soft)] px-4 py-2.5">
               <p className="text-xs font-semibold text-[var(--text-main)]">Preview</p>
             </div>
-            <div className="h-[calc(100vh-12rem)]">
+            <div className="h-[calc(100vh-10rem)]">
               {previewData && (
                 <StatusPagePreview data={previewData} clientUrl={clientUrl} />
               )}

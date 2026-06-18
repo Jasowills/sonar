@@ -68,32 +68,36 @@ export function PublicStatusPage() {
       style={page.brandColor ? { '--status-brand': page.brandColor } as React.CSSProperties : undefined}
     >
       <div className="mx-auto max-w-2xl px-6 py-16">
-        <div className="mb-10 text-center">
+        <div className="mb-12 text-center">
           {page.logoUrl && (
             <img
               src={page.logoUrl}
               alt={`${page.name} logo`}
-              className="mx-auto mb-4 max-h-12 object-contain"
+              className="mx-auto mb-5 max-h-10 object-contain"
             />
           )}
           <h1
-            className="text-2xl font-semibold tracking-tight text-[var(--text-strong)]"
+            className="text-xl font-semibold tracking-tight text-[var(--text-strong)]"
             style={page.brandColor ? { color: 'var(--status-brand)' } : undefined}
           >
             {page.name}
           </h1>
           {page.headline && (
-            <p className="mt-2 text-sm text-[var(--text-muted)]">{page.headline}</p>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">{page.headline}</p>
           )}
         </div>
 
         <div
-          className="mb-10 border px-6 py-6 text-center"
-          style={{ borderColor: overall.color }}
+          className="mb-12 rounded-xl px-6 py-7"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${overall.color} 8%, transparent)`,
+          }}
+          role="status"
+          aria-live="polite"
         >
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center gap-3">
             <span
-              className="inline-block h-4 w-4 rounded-full"
+              className="inline-block h-3 w-3 rounded-full"
               style={{ backgroundColor: overall.color }}
               aria-hidden="true"
             />
@@ -106,93 +110,118 @@ export function PublicStatusPage() {
               {overall.label}
             </span>
           </div>
-          <p className="mt-3 text-xs text-[var(--text-muted)]">
+          <p className="mt-1.5 text-xs text-[var(--text-muted)]">
             Updated {updatedDate}
           </p>
         </div>
 
         {visibleServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center border border-[var(--border-soft)] px-5 py-12">
+          <div className="flex flex-col items-center justify-center py-16">
             <AlertTriangle className="mb-3 h-8 w-8 text-[var(--text-muted)]" />
             <p className="text-sm text-[var(--text-muted)]">No services configured</p>
           </div>
         ) : (
-          <>
-            {Array.from(groups.entries()).map(([groupName, services]) => (
-              <div key={groupName} className="mb-6">
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  {groupName}
-                </h2>
-                <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
-                  {services.map((svc) => {
-                    const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
-                    const Icon = config.icon
-                    return (
-                      <div key={svc.id} className="flex items-center justify-between px-5 py-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-[var(--text-main)]">
-                            {svc.displayName ?? svc.name}
-                          </p>
-                          {svc.latencyMs != null && (
-                            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                              {svc.latencyMs}ms response
-                            </p>
-                          )}
-                        </div>
-                        <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--text-muted)]">
-                          <Icon className="h-3.5 w-3.5" style={{ color: config.dot }} aria-hidden="true" />
-                          <span className="sr-only">{config.a11yLabel}</span>
-                          {config.label}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {ungrouped.length > 0 && (
-              <div className="mb-6">
-                {groups.size > 0 && (
-                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Other Services
+          <div className="mb-14">
+            <div className="space-y-6">
+              {Array.from(groups.entries()).map(([groupName, services]) => (
+                <div key={groupName}>
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    {groupName}
                   </h2>
-                )}
-                <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
-                  {ungrouped.map((svc) => {
-                    const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
-                    const Icon = config.icon
-                    return (
-                      <div key={svc.id} className="flex items-center justify-between px-5 py-4">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-[var(--text-main)]">
-                            {svc.displayName ?? svc.name}
-                          </p>
-                          {svc.latencyMs != null && (
-                            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                              {svc.latencyMs}ms response
+                  <div className="overflow-hidden rounded-lg border border-[var(--border-soft)]">
+                    {services.map((svc) => {
+                      const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
+                      return (
+                        <div
+                          key={svc.id}
+                          className="flex items-center justify-between border-b border-[var(--border-soft)] px-5 py-3.5 last:border-b-0 transition-colors hover:bg-[var(--surface-panel-soft)]"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-[var(--text-main)]">
+                              {svc.displayName ?? svc.name}
                             </p>
-                          )}
+                            {svc.latencyMs != null && (
+                              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                                {svc.latencyMs}ms
+                              </p>
+                            )}
+                          </div>
+                          <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full"
+                              style={{ backgroundColor: config.dot }}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">{config.a11yLabel}</span>
+                            {config.label}
+                          </span>
                         </div>
-                        <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--text-muted)]">
-                          <Icon className="h-3.5 w-3.5" style={{ color: config.dot }} aria-hidden="true" />
-                          <span className="sr-only">{config.a11yLabel}</span>
-                          {config.label}
-                        </span>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              ))}
+
+              {ungrouped.length > 0 && (
+                <div>
+                  {groups.size > 0 && (
+                    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                      Other Services
+                    </h2>
+                  )}
+                  <div className="overflow-hidden rounded-lg border border-[var(--border-soft)]">
+                    {ungrouped.map((svc) => {
+                      const config = STATUS_CONFIG[svc.status] ?? STATUS_CONFIG.PENDING
+                      return (
+                        <div
+                          key={svc.id}
+                          className="flex items-center justify-between border-b border-[var(--border-soft)] px-5 py-3.5 last:border-b-0 transition-colors hover:bg-[var(--surface-panel-soft)]"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-[var(--text-main)]">
+                              {svc.displayName ?? svc.name}
+                            </p>
+                            {svc.latencyMs != null && (
+                              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                                {svc.latencyMs}ms
+                              </p>
+                            )}
+                          </div>
+                          <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full"
+                              style={{ backgroundColor: config.dot }}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">{config.a11yLabel}</span>
+                            {config.label}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {page.footerText && (
-          <p className="mt-10 text-center text-xs text-[var(--text-muted)]">
+          <p className="mb-3 text-center text-xs text-[var(--text-muted)]">
             {page.footerText}
           </p>
         )}
+        <p className="text-center text-[11px] text-[var(--text-muted)]">
+          Powered by{' '}
+          <a
+            href="https://sonar.codes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 decoration-[var(--text-muted)]/30 hover:decoration-[var(--text-muted)] transition-colors"
+          >
+            Sonar
+          </a>
+        </p>
       </div>
     </div>
   )

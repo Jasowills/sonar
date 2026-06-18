@@ -16,6 +16,8 @@ import {
   useUpdateAlertChannel,
   useDeleteAlertChannel,
   useCreateAlertRule,
+  useUpdateAlertRule,
+  useDeleteAlertRule,
   useWorkspaces,
 } from '@/lib/api'
 
@@ -33,6 +35,8 @@ export function AlertsPage() {
   const { mutateAsync: updateChannel } = useUpdateAlertChannel()
   const { mutateAsync: deleteChannel } = useDeleteAlertChannel()
   const { mutateAsync: createRule } = useCreateAlertRule()
+  const { mutateAsync: updateRule } = useUpdateAlertRule()
+  const { mutateAsync: deleteRule } = useDeleteAlertRule()
 
   const workspaceId = workspaces?.[0]?.id
 
@@ -73,7 +77,8 @@ export function AlertsPage() {
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await createChannel({ name: channelName, type: channelType, destination: channelDest })
+      if (!workspaceId) return
+      await createChannel({ name: channelName, type: channelType, destination: channelDest, workspaceId })
       setChannelName('')
       setChannelType('SLACK')
       setChannelDest('')
@@ -111,11 +116,13 @@ export function AlertsPage() {
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      if (!workspaceId) return
       await createRule({
         name: ruleName,
         triggerType: ruleTrigger,
         minimumSeverity: ruleSeverity,
         alertChannelId: ruleChannelId,
+        workspaceId,
       })
       setRuleName('')
       setRuleTrigger('')
@@ -341,15 +348,22 @@ export function AlertsPage() {
                   {channelById(rule.alertChannelId) ? ` → ${channelById(rule.alertChannelId)?.name}` : ''}
                 </p>
               </div>
-              <div
-                className={`mt-1 h-2 w-2 rounded-full ${
-                  rule.isEnabled ? 'bg-[var(--dot-healthy)]' : 'bg-[var(--dot-down)]'
-                }`}
-                aria-hidden="true"
-              />
-              <span className="sr-only">
-                {rule.isEnabled ? 'Enabled' : 'Disabled'}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => updateRule({ id: rule.id, isEnabled: !rule.isEnabled })}
+                  className={`h-2 w-2 rounded-full ${
+                    rule.isEnabled ? 'bg-[var(--dot-healthy)]' : 'bg-[var(--dot-down)]'
+                  }`}
+                  title={rule.isEnabled ? 'Disable' : 'Enable'}
+                />
+                <button
+                  onClick={() => deleteRule(rule.id)}
+                  className="flex h-7 w-7 items-center justify-center text-[var(--text-muted)] hover:text-[var(--dot-down)]"
+                  title="Delete rule"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

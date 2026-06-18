@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
-import { AlertTriangle, Siren, Plus, Check } from 'lucide-react'
+import { AlertTriangle, Siren, Plus, Check, Trash2 } from 'lucide-react'
 import {
   useIncidents,
   useCreateIncident,
   useUpdateIncident,
+  useDeleteIncident,
   useWorkspaces,
   useProjects,
 } from '@/lib/api'
@@ -24,6 +25,7 @@ export function IncidentsPage() {
   const { data: incidents, isLoading, error } = useIncidents()
   const { mutateAsync: createIncident } = useCreateIncident()
   const { mutateAsync: updateIncident } = useUpdateIncident()
+  const { mutateAsync: deleteIncident } = useDeleteIncident()
   const { data: workspaces } = useWorkspaces()
   const { data: projects } = useProjects()
   const workspaceId = workspaces?.[0]?.id
@@ -208,6 +210,16 @@ export function IncidentsPage() {
                     Resolve
                   </button>
                 )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void deleteIncident(incident.id)
+                  }}
+                  className="flex h-7 w-7 items-center justify-center text-[var(--text-muted)] hover:text-[var(--dot-down)]"
+                  title="Delete incident"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
             </div>
           ))}

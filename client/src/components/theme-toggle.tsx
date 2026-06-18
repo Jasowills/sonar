@@ -14,6 +14,7 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
       variant="outline"
       size="sm"
       onClick={onToggle}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
     </Button>

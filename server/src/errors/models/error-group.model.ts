@@ -49,3 +49,12 @@ export class ErrorGroupModel {
   @Field(() => String, { nullable: true })
   serviceName?: string | null;
 }
+
+@ObjectType()
+export class ErrorGroupsConnection {
+  @Field(() => [ErrorGroupModel])
+  items!: ErrorGroupModel[];
+
+  @Field(() => String, { nullable: true })
+  nextCursor?: string | null;
+}

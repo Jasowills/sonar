@@ -1,5 +1,6 @@
 import { Pencil, Plus, Radar, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useDeleteMonitor, useMonitors } from '@/lib/api'
 import type { Monitor } from '@/lib/api'
 import {
@@ -9,9 +10,11 @@ import {
 } from '@/lib/monitor-state'
 import { PageNotice } from '@/components/page-notice'
 import { CreateMonitorModal } from '@/features/create/create-monitor-modal'
+import { useSelectedProject } from '@/hooks/use-selected-project'
 
 export function MonitorsPage() {
-  const { data: monitors, isLoading, isError, refetch } = useMonitors()
+  const { project } = useSelectedProject()
+  const { data: monitors, isLoading, isError, refetch } = useMonitors(project?.slug)
   const { mutateAsync: deleteMonitor } = useDeleteMonitor()
   const [showCreateMonitor, setShowCreateMonitor] = useState(false)
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null)
@@ -39,13 +42,13 @@ export function MonitorsPage() {
         <p className="mt-1 max-w-sm text-center text-sm text-[var(--text-muted)]">
           Create an HTTP check to start measuring uptime and latency for your services.
         </p>
-        <button
-          onClick={() => setShowCreateMonitor(true)}
-          className="mt-5 flex items-center gap-1 border border-[var(--border-soft)] px-4 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
-        >
-          <Plus className="h-4 w-4" />
-          Create monitor
-        </button>
+            <button
+              onClick={() => setShowCreateMonitor(true)}
+              className="flex items-center gap-1 border border-[var(--border-soft)] px-3 py-1.5 text-xs font-medium text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
+            >
+              <Plus className="h-3 w-3" />
+              Create monitor
+            </button>
         <CreateMonitorModal open={showCreateMonitor} onClose={() => setShowCreateMonitor(false)} />
       </div>
     )
@@ -77,7 +80,12 @@ export function MonitorsPage() {
                 className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--text-main)]">{monitor.name}</p>
+                  <Link
+                    to={`/app/monitors/${monitor.id}`}
+                    className="text-sm font-medium text-[var(--text-main)] hover:text-[var(--accent)]"
+                  >
+                    {monitor.name}
+                  </Link>
                   <p className="text-xs text-[var(--text-muted)]">
                     {monitor.serviceName} · {monitor.method} {monitor.targetUrl}
                   </p>

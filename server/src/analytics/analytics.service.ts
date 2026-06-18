@@ -191,17 +191,20 @@ export class AnalyticsService {
     const toDate = to ? new Date(to) : now;
 
     try {
+      console.log(`[pageviews] project=${projectId} from=${fromDate.toISOString()} to=${toDate.toISOString()}`);
       const events = await this.prisma.analyticsEvent.findMany({
         where: { projectId, type: 'page_view', timestamp: { gte: fromDate, lte: toDate } },
         select: { timestamp: true },
         orderBy: { timestamp: 'asc' },
       });
+      console.log(`[pageviews] found ${events.length} raw events`);
 
       const map = new Map<string, number>();
       for (const e of events) {
         const key = e.timestamp.toISOString().slice(0, 10);
         map.set(key, (map.get(key) ?? 0) + 1);
       }
+      console.log(`[pageviews] grouped into ${map.size} days:`, Object.fromEntries(map));
 
       const result: PageViewTimeSeries = [];
       const cursor = new Date(fromDate);
@@ -211,8 +214,10 @@ export class AnalyticsService {
         cursor.setDate(cursor.getDate() + 1);
       }
 
+      console.log(`[pageviews] returning ${result.length} data points`);
       return result;
-    } catch {
+    } catch (err) {
+      console.error('[pageviews] error:', err);
       return [];
     }
   }

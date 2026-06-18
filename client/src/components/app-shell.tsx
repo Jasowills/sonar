@@ -231,6 +231,7 @@ export function AppShell({
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
               className="flex h-9 w-9 items-center justify-center border border-[var(--border-soft)] text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] lg:hidden"
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -306,7 +307,7 @@ Sonar
         </aside>
 
         {/* Main area */}
-        <main className="min-w-0 flex-1 px-6 pb-16 pt-8 lg:px-10">
+        <main className="min-w-0 flex-1 bg-[var(--surface-page)] px-6 pb-16 pt-8 lg:px-10">
           {/* Page header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>

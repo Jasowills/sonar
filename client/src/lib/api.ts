@@ -578,6 +578,110 @@ function useMonitorsRefresh() {
   }
 }
 
+export type CheckResult = {
+  id: string
+  state: string
+  statusCode: number | null
+  latencyMs: number | null
+  errorMessage: string | null
+  checkedAt: string
+  monitorId: string
+}
+
+export type CheckResultsConnection = {
+  items: CheckResult[]
+  nextCursor: string | null
+}
+
+const MONITOR_QUERY = gql`
+  query Monitor($id: String!) {
+    monitor(id: $id) {
+      id
+      name
+      targetUrl
+      method
+      expectedStatus
+      intervalSeconds
+      timeoutSeconds
+      isActive
+      serviceId
+      serviceName
+      environmentId
+      environmentName
+      latestState
+      latestLatencyMs
+      updatedAt
+    }
+  }
+`
+
+const CHECK_RESULTS_QUERY = gql`
+  query CheckResults($monitorId: String!, $limit: Int, $cursor: String) {
+    checkResults(monitorId: $monitorId, limit: $limit, cursor: $cursor) {
+      items {
+        id
+        state
+        statusCode
+        latencyMs
+        errorMessage
+        checkedAt
+        monitorId
+      }
+      nextCursor
+    }
+  }
+`
+
+export function useMonitor(id: string) {
+  return useQuery({
+    queryKey: ['monitor', id],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ monitor: Monitor }>(
+        MONITOR_QUERY,
+        { id },
+      )
+      return data.monitor
+    },
+    enabled: !!id,
+  })
+}
+
+export function useCheckResults(monitorId: string, limit = 50) {
+  return useQuery({
+    queryKey: ['checkResults', monitorId, limit],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{
+        checkResults: CheckResultsConnection
+      }>(CHECK_RESULTS_QUERY, { monitorId, limit })
+      return data.checkResults
+    },
+    refetchInterval: 15_000,
+    enabled: !!monitorId,
+  })
+}
+
+export function useLoadMoreCheckResults(monitorId: string) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: async (cursor: string) => {
+      const data = await graphqlClient.request<{
+        checkResults: CheckResultsConnection
+      }>(CHECK_RESULTS_QUERY, { monitorId, limit: 50, cursor })
+      return data.checkResults
+    },
+    onSuccess: (newData) => {
+      queryClient.setQueryData(['checkResults', monitorId, 50], (old?: CheckResultsConnection) => {
+        if (!old) return newData
+        return {
+          items: [...old.items, ...newData.items],
+          nextCursor: newData.nextCursor,
+        }
+      })
+    },
+  })
+  return mutation
+}
+
 export function useCreateMonitor() {
   const refresh = useMonitorsRefresh()
   return useMutation({
@@ -820,29 +924,51 @@ export type ErrorGroup = {
 }
 
 const ERROR_GROUPS_QUERY = gql`
-  query ErrorGroups($projectSlug: String, $environmentKey: String, $serviceId: String, $limit: Int) {
-    errorGroups(projectSlug: $projectSlug, environmentKey: $environmentKey, serviceId: $serviceId, limit: $limit) {
-      id
-      fingerprint
-      title
-      status
-      occurrenceCount
-      firstSeenAt
-      lastSeenAt
-      projectId
-      environmentId
-      serviceId
-      environmentName
-      serviceName
+  query ErrorGroups($projectSlug: String, $environmentKey: String, $serviceId: String, $limit: Int, $cursor: String) {
+    errorGroups(projectSlug: $projectSlug, environmentKey: $environmentKey, serviceId: $serviceId, limit: $limit, cursor: $cursor) {
+      items {
+        id
+        fingerprint
+        title
+        status
+        occurrenceCount
+        firstSeenAt
+        lastSeenAt
+        projectId
+        environmentId
+        serviceId
+        environmentName
+        serviceName
+      }
+      nextCursor
     }
   }
 `
+
+export type ErrorGroupsConnection = {
+  items: ErrorGroup[]
+  nextCursor: string | null
+}
 
 export function useErrorGroups(projectSlug?: string, environmentKey?: string) {
   return useQuery({
     queryKey: ['errorGroups', projectSlug ?? null, environmentKey ?? null],
     queryFn: async () => {
-      const data = await graphqlClient.request<{ errorGroups: ErrorGroup[] }>(
+      const data = await graphqlClient.request<{ errorGroups: ErrorGroupsConnection }>(
+        ERROR_GROUPS_QUERY,
+        { projectSlug, environmentKey },
+      )
+      return data.errorGroups.items
+    },
+    refetchInterval: 15_000,
+  })
+}
+
+export function useErrorGroupsConnection(projectSlug?: string, environmentKey?: string) {
+  return useQuery({
+    queryKey: ['errorGroupsConnection', projectSlug ?? null, environmentKey ?? null],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ errorGroups: ErrorGroupsConnection }>(
         ERROR_GROUPS_QUERY,
         { projectSlug, environmentKey },
       )
@@ -885,23 +1011,46 @@ const DEPLOYMENTS_QUERY = gql`
     $environmentKey: String
     $projectSlug: String
     $limit: Int
+    $cursor: String
   ) {
     deployments(
       environmentKey: $environmentKey
       projectSlug: $projectSlug
       limit: $limit
+      cursor: $cursor
     ) {
-      id
-      version
-      status
-      description
-      deployedBy
-      deployedAt
-      environmentName
-      serviceName
+      items {
+        id
+        version
+        status
+        description
+        deployedBy
+        environmentName
+        serviceName
+        deployedAt
+      }
+      nextCursor
     }
   }
 `
+
+export type DeploymentsConnection = {
+  items: Deployment[]
+  nextCursor: string | null
+}
+
+export function useDeployments(limit?: number) {
+  return useQuery({
+    queryKey: ['deployments', limit ?? null],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ deployments: DeploymentsConnection }>(
+        DEPLOYMENTS_QUERY,
+        { limit },
+      )
+      return data.deployments.items
+    },
+  })
+}
 
 const RECORD_DEPLOYMENT = gql`
   mutation RecordDeployment($input: RecordDeploymentInput!) {
@@ -915,19 +1064,6 @@ const RECORD_DEPLOYMENT = gql`
     }
   }
 `
-
-export function useDeployments(limit?: number) {
-  return useQuery({
-    queryKey: ['deployments', limit ?? null],
-    queryFn: async () => {
-      const data = await graphqlClient.request<{ deployments: Deployment[] }>(
-        DEPLOYMENTS_QUERY,
-        { limit },
-      )
-      return data.deployments
-    },
-  })
-}
 
 export function useRecordDeployment() {
   const queryClient = useQueryClient()
@@ -1242,28 +1378,36 @@ export type ErrorEvent = {
 }
 
 const ERROR_EVENTS_QUERY = gql`
-  query ErrorEvents($groupId: String!) {
-    errorEvents(groupId: $groupId) {
-      id
-      eventKey
-      message
-      stack
-      release
-      occurredAt
-      errorGroupId
+  query ErrorEvents($groupId: String!, $limit: Int, $cursor: String) {
+    errorEvents(groupId: $groupId, limit: $limit, cursor: $cursor) {
+      items {
+        id
+        eventKey
+        message
+        stack
+        release
+        occurredAt
+        errorGroupId
+      }
+      nextCursor
     }
   }
 `
+
+export type ErrorEventsConnection = {
+  items: ErrorEvent[]
+  nextCursor: string | null
+}
 
 export function useErrorEvents(groupId: string) {
   return useQuery({
     queryKey: ['errorEvents', groupId],
     queryFn: async () => {
-      const data = await graphqlClient.request<{ errorEvents: ErrorEvent[] }>(
+      const data = await graphqlClient.request<{ errorEvents: ErrorEventsConnection }>(
         ERROR_EVENTS_QUERY,
         { groupId },
       )
-      return data.errorEvents
+      return data.errorEvents.items
     },
     enabled: !!groupId,
   })
@@ -1470,6 +1614,28 @@ export function useAddIncidentUpdate() {
       void queryClient.invalidateQueries({
         queryKey: ['incidentUpdates', vars.incidentId],
       })
+      void queryClient.invalidateQueries({ queryKey: ['incidents'] })
+    },
+  })
+}
+
+const DELETE_INCIDENT = gql`
+  mutation DeleteIncident($id: String!) {
+    deleteIncident(id: $id)
+  }
+`
+
+export function useDeleteIncident() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const data = await graphqlClient.request<{ deleteIncident: boolean }>(
+        DELETE_INCIDENT,
+        { id },
+      )
+      return data.deleteIncident
+    },
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['incidents'] })
     },
   })
@@ -2286,5 +2452,339 @@ export function useAnalyticsEventTypes(projectId?: string) {
       return data.analyticsEventTypes
     },
     enabled: !!projectId,
+  })
+}
+
+// ─── AI Features ─────────────────────────────────────────────────────────────
+
+export type HealthTrendDirection = 'IMPROVING' | 'DECLINING' | 'STABLE'
+export type InsightSeverity = 'INFO' | 'WARNING' | 'CRITICAL'
+
+export type AIErrorSummary = {
+  errorGroupId: string
+  summary: string
+  suggestedFix: string | null
+  confidence: number | null
+  createdAt: string
+}
+
+export type DeploymentRef = {
+  id: string
+  version: string
+  environmentName: string
+  serviceName: string | null
+  deployedAt: string
+  deployedBy: string
+}
+
+export type IncidentCorrelation = {
+  incidentId: string
+  narrative: string
+  relatedDeployments: DeploymentRef[]
+  relatedErrorGroups: string[] | null
+}
+
+export type HealthTrend = {
+  monitorId: string
+  trend: HealthTrendDirection
+  slope: number
+  avgLatencyMs: number | null
+  failureRate: number | null
+  projectedHoursToCritical: number | null
+  confidence: number | null
+  dataPoints: number | null
+  analyzedAt: string
+}
+
+export type AISessionInsight = {
+  sessionId: string
+  summary: string
+  keyMoments: string[]
+  frustrationHotspots: string[]
+  recommendation: string | null
+}
+
+export type AIAnalyticsInsight = {
+  title: string
+  description: string
+  severity: InsightSeverity
+  metric: string | null
+  value: number | null
+}
+
+export type IncidentRootCause = {
+  incidentId: string
+  narrative: string
+  possibleCauses: string[]
+  suggestions: string[]
+  relatedDeploymentId: string | null
+}
+
+export type AnalyticsReport = {
+  workspaceId: string
+  executiveSummary: string
+  trafficInsights: string[]
+  behaviorInsights: string[]
+  frustrationHotspots: string[]
+  recommendations: string[]
+  periodLabel: string
+  analyzedAt: string
+}
+
+export type AlertTriage = {
+  alertRuleId: string
+  context: string | null
+  frequency: string | null
+  suggestion: string | null
+}
+
+const ERROR_SUMMARY_QUERY = gql`
+  query SummarizeErrorGroup($errorGroupId: ID!) {
+    summarizeErrorGroup(errorGroupId: $errorGroupId) {
+      errorGroupId
+      summary
+      suggestedFix
+      confidence
+      createdAt
+    }
+  }
+`
+
+const INCIDENT_CORRELATION_QUERY = gql`
+  query IncidentCorrelation($incidentId: ID!) {
+    incidentCorrelation(incidentId: $incidentId) {
+      incidentId
+      narrative
+      relatedDeployments {
+        id
+        version
+        environmentName
+        serviceName
+        deployedAt
+        deployedBy
+      }
+      relatedErrorGroups
+    }
+  }
+`
+
+const MONITOR_HEALTH_TREND_QUERY = gql`
+  query MonitorHealthTrend($monitorId: ID!) {
+    monitorHealthTrend(monitorId: $monitorId) {
+      monitorId
+      trend
+      slope
+      avgLatencyMs
+      failureRate
+      projectedHoursToCritical
+      confidence
+      dataPoints
+      analyzedAt
+    }
+  }
+`
+
+const ANALYZE_SESSION_QUERY = gql`
+  query AnalyzeSession($sessionId: ID!) {
+    analyzeSession(sessionId: $sessionId) {
+      sessionId
+      summary
+      keyMoments
+      frustrationHotspots
+      recommendation
+    }
+  }
+`
+
+const ANALYTICS_INSIGHTS_QUERY = gql`
+  query AnalyticsInsights($workspaceId: String!, $timeRange: String) {
+    analyticsInsights(workspaceId: $workspaceId, timeRange: $timeRange) {
+      title
+      description
+      severity
+      metric
+      value
+    }
+  }
+`
+
+const INCIDENT_ROOT_CAUSE_MUTATION = gql`
+  mutation GenerateIncidentRootCause($incidentId: ID!) {
+    generateIncidentRootCause(incidentId: $incidentId) {
+      incidentId
+      narrative
+      possibleCauses
+      suggestions
+      relatedDeploymentId
+    }
+  }
+`
+
+const ANALYTICS_REPORT_QUERY = gql`
+  query GenerateAnalyticsAnalysis($workspaceId: String!, $timeRange: String) {
+    generateAnalyticsAnalysis(workspaceId: $workspaceId, timeRange: $timeRange) {
+      workspaceId
+      executiveSummary
+      trafficInsights
+      behaviorInsights
+      frustrationHotspots
+      recommendations
+      periodLabel
+      analyzedAt
+    }
+  }
+`
+
+const GENERATE_WEEKLY_BRIEF_MUTATION = gql`
+  mutation GenerateWeeklyBrief($workspaceId: String!) {
+    generateWeeklyBrief(workspaceId: $workspaceId)
+  }
+`
+
+const ALERT_TRIAGE_QUERY = gql`
+  query AlertTriage($alertRuleId: ID!) {
+    alertTriage(alertRuleId: $alertRuleId) {
+      alertRuleId
+      context
+      frequency
+      suggestion
+    }
+  }
+`
+
+export function useErrorSummary(errorGroupId?: string) {
+  return useQuery({
+    queryKey: ['errorSummary', errorGroupId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ summarizeErrorGroup: AIErrorSummary }>(
+        ERROR_SUMMARY_QUERY,
+        { errorGroupId },
+      )
+      return data.summarizeErrorGroup
+    },
+    enabled: !!errorGroupId,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useIncidentCorrelation(incidentId?: string) {
+  return useQuery({
+    queryKey: ['incidentCorrelation', incidentId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ incidentCorrelation: IncidentCorrelation }>(
+        INCIDENT_CORRELATION_QUERY,
+        { incidentId },
+      )
+      return data.incidentCorrelation
+    },
+    enabled: !!incidentId,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useMonitorHealthTrend(monitorId?: string) {
+  return useQuery({
+    queryKey: ['monitorHealthTrend', monitorId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ monitorHealthTrend: HealthTrend }>(
+        MONITOR_HEALTH_TREND_QUERY,
+        { monitorId },
+      )
+      return data.monitorHealthTrend
+    },
+    enabled: !!monitorId,
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+export function useAnalyzeSession(sessionId?: string) {
+  return useQuery({
+    queryKey: ['analyzeSession', sessionId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyzeSession: AISessionInsight }>(
+        ANALYZE_SESSION_QUERY,
+        { sessionId },
+      )
+      return data.analyzeSession
+    },
+    enabled: !!sessionId,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useAnalyticsInsights(workspaceId?: string, timeRange?: string) {
+  return useQuery({
+    queryKey: ['analyticsInsights', workspaceId, timeRange],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ analyticsInsights: AIAnalyticsInsight[] }>(
+        ANALYTICS_INSIGHTS_QUERY,
+        { workspaceId, timeRange },
+      )
+      return data.analyticsInsights
+    },
+    enabled: !!workspaceId,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useGenerateIncidentRootCause() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (incidentId: string) => {
+      const data = await graphqlClient.request<{ generateIncidentRootCause: IncidentRootCause }>(
+        INCIDENT_ROOT_CAUSE_MUTATION,
+        { incidentId },
+      )
+      return data.generateIncidentRootCause
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidentRootCause'] })
+    },
+  })
+}
+
+export function useAnalyticsReport(workspaceId?: string, timeRange?: string) {
+  return useQuery({
+    queryKey: ['analyticsReport', workspaceId, timeRange],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ generateAnalyticsAnalysis: AnalyticsReport }>(
+        ANALYTICS_REPORT_QUERY,
+        { workspaceId, timeRange },
+      )
+      return data.generateAnalyticsAnalysis
+    },
+    enabled: !!workspaceId,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useGenerateWeeklyBrief() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (workspaceId: string) => {
+      const data = await graphqlClient.request<{ generateWeeklyBrief: string }>(
+        GENERATE_WEEKLY_BRIEF_MUTATION,
+        { workspaceId },
+      )
+      return data.generateWeeklyBrief
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useAlertTriage(alertRuleId?: string) {
+  return useQuery({
+    queryKey: ['alertTriage', alertRuleId],
+    queryFn: async () => {
+      const data = await graphqlClient.request<{ alertTriage: AlertTriage }>(
+        ALERT_TRIAGE_QUERY,
+        { alertRuleId },
+      )
+      return data.alertTriage
+    },
+    enabled: !!alertRuleId,
+    staleTime: 5 * 60 * 1000,
   })
 }

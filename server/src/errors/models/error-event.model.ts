@@ -26,3 +26,12 @@ export class ErrorEventModel {
   @Field()
   errorGroupId!: string;
 }
+
+@ObjectType()
+export class ErrorEventsConnection {
+  @Field(() => [ErrorEventModel])
+  items!: ErrorEventModel[];
+
+  @Field(() => String, { nullable: true })
+  nextCursor?: string | null;
+}

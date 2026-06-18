@@ -120,11 +120,11 @@ export function StatusPagesPage() {
               <div
                 key={page.id}
                 onClick={() => navigate(`/app/status-pages/${page.id}`)}
-                className="flex cursor-pointer items-start justify-between gap-4 px-5 py-4 hover:bg-[var(--surface-panel-soft)]"
+                className="flex cursor-pointer items-start justify-between gap-4 px-5 py-4 transition-colors hover:bg-[var(--surface-panel-soft)]"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-[var(--text-main)]">{page.name}</p>
-                  <p className="truncate text-xs text-[var(--text-muted)]">/{page.slug}</p>
+                  <p className="truncate text-xs text-[var(--text-muted)]">/{page.workspaceSlug}/{page.slug}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <a

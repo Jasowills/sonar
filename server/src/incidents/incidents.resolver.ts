@@ -53,4 +53,9 @@ export class IncidentsResolver {
   ): Promise<IncidentUpdateModel> {
     return this.incidentsService.addUpdate(input);
   }
+
+  @Mutation(() => Boolean)
+  deleteIncident(@Args('id') id: string): Promise<boolean> {
+    return this.incidentsService.remove(id);
+  }
 }

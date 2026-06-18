@@ -1,6 +1,6 @@
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
-import { DeploymentModel } from './models/deployment.model';
+import { DeploymentModel, DeploymentsConnection } from './models/deployment.model';
 import { RecordDeploymentInput } from './deployments.inputs';
 import { DeploymentsService } from './deployments.service';
 
@@ -8,7 +8,7 @@ import { DeploymentsService } from './deployments.service';
 export class DeploymentsResolver {
   constructor(private readonly deploymentsService: DeploymentsService) {}
 
-  @Query(() => [DeploymentModel])
+  @Query(() => DeploymentsConnection)
   deployments(
     @Args('environmentKey', { type: () => String, nullable: true })
     environmentKey?: string,
@@ -16,11 +16,14 @@ export class DeploymentsResolver {
     projectSlug?: string,
     @Args('limit', { type: () => Int, nullable: true })
     limit?: number,
-  ): Promise<DeploymentModel[]> {
+    @Args('cursor', { type: () => String, nullable: true })
+    cursor?: string,
+  ): Promise<DeploymentsConnection> {
     return this.deploymentsService.findAll({
       environmentKey,
       projectSlug,
       limit,
+      cursor,
     });
   }
 

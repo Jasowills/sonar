@@ -87,7 +87,7 @@ export function NotificationPanel() {
       >
         <Bell className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[14px] items-center justify-center bg-[var(--text-main)] px-1 text-[10px] font-bold text-[var(--surface-page)] leading-none">
+          <span className="absolute -right-1 -top-0.5 flex h-4 min-w-[14px] items-center justify-center bg-[var(--text-main)] px-1 text-[10px] font-bold text-[var(--surface-page)] leading-none">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -124,6 +124,7 @@ export function NotificationPanel() {
             </div>
             <button
               onClick={() => setOpen(false)}
+              aria-label="Close notifications panel"
               className="flex h-8 w-8 items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
             >
               <X className="h-4 w-4" />
