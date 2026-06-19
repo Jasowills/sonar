@@ -190,7 +190,7 @@ function AppContent() {
     }
     return (
       <Suspense
-        fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}
+        fallback={<div className="flex-1 bg-[var(--surface-page)]" />}
       >
         <SEO
           title="Observability for developers"
@@ -219,7 +219,7 @@ function AppContent() {
   if (location.pathname.startsWith('/status/')) {
     const statusParams = getStatusPathParams(location.pathname)
     return (
-      <Suspense fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}>
+      <Suspense fallback={<div className="flex-1 bg-[var(--surface-page)]" />}>
         <Routes>
           <Route path="/status/:workspaceSlug/:slug" element={<PublicStatusPage />} />
         </Routes>
@@ -229,7 +229,7 @@ function AppContent() {
 
   if (isPublicMarketingRoute) {
     return (
-      <Suspense fallback={<div className="min-h-dvh bg-[var(--surface-page)]" />}>
+      <Suspense fallback={<div className="flex-1 bg-[var(--surface-page)]" />}>
       <Routes>
         <Route
           path="/login"

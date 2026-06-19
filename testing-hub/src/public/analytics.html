@@ -11,7 +11,7 @@
   h1 { font-size: 20px; font-weight: 600; color: #eee; margin-bottom: 4px; }
   .subtitle { font-size: 12px; color: #555; margin-bottom: 28px; }
   .status-row { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
-  .status-item { border: 1px solid #1a1a1a; padding: 12px 16px; min-width: 140px; }
+  .status-item { border: 1px solid #1a1a1a; padding: 12px 16px; min-width: 130px; }
   .status-item .val { font-size: 20px; font-weight: 600; color: #eee; font-family: monospace; }
   .status-item .lbl { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
   .section-title { font-size: 11px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; margin-top: 32px; }
@@ -22,23 +22,36 @@
   button { background: transparent; border: 1px solid #222; color: #aaa; padding: 4px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
   button:hover { border-color: #444; color: #ddd; }
   button:disabled { opacity: 0.25; cursor: default; }
+  button.sm { padding: 2px 8px; font-size: 10px; }
   .result { font-size: 10px; font-family: monospace; color: #444; white-space: pre-wrap; margin-top: 4px; max-height: 100px; overflow: auto; }
   .result.ok { color: #4ade80; }
   .result.err { color: #f87171; }
-  .config-box { border: 1px solid #1a1a1a; padding: 16px; margin-top: 32px; }
-  .config-box label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
-  .config-box input { width: 100%; background: #111; border: 1px solid #222; color: #c0c0c0; padding: 8px; font-family: monospace; font-size: 12px; margin-bottom: 12px; }
   .green { border-color: #1a3a1a; color: #4ade80; }
   .green:hover { border-color: #2a5a2a; }
+  .blue { border-color: #1a2a3a; color: #60a5fa; }
+  .blue:hover { border-color: #2a3a5a; }
+  .red { border-color: #3a1a1a; color: #f87171; }
+  .red:hover { border-color: #5a2a2a; }
+  .yellow { border-color: #3a3a1a; color: #facc15; }
+  .yellow:hover { border-color: #5a5a2a; }
   .badge { font-size: 10px; padding: 2px 6px; border-radius: 2px; }
   .badge.green { background: #0a1a0a; color: #4ade80; border: 1px solid #1a3a1a; }
   .badge.red { background: #1a0a0a; color: #f87171; border: 1px solid #3a1a1a; }
   .badge.yellow { background: #1a1a0a; color: #facc15; border: 1px solid #3a3a1a; }
+  .config-box { border: 1px solid #1a1a1a; padding: 16px; margin-top: 32px; }
+  .config-box label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+  .config-box input { width: 100%; background: #111; border: 1px solid #222; color: #c0c0c0; padding: 8px; font-family: monospace; font-size: 12px; margin-bottom: 12px; }
+  .config-row { display: flex; gap: 8px; margin-top: 12px; }
+  .log { font-family: monospace; font-size: 10px; color: #555; max-height: 200px; overflow-y: auto; margin-top: 16px; padding: 8px; background: #080808; border: 1px solid #111; }
+  .log div { padding: 2px 0; }
+  .log .info { color: #4ade80; }
+  .log .warn { color: #facc15; }
+  .log .err { color: #f87171; }
 </style>
 </head>
 <body>
 <h1>SonarWeb SDK Test</h1>
-<p class="subtitle">Interactive test harness for the browser analytics SDK</p>
+<p class="subtitle">Interactive test harness for the browser analytics SDK — all features</p>
 
 <div class="status-row">
   <div class="status-item"><div class="val" id="val-consent">—</div><div class="lbl">consent</div></div>
@@ -49,92 +62,95 @@
 
 <div class="section-title">Track Events</div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Send a custom event with the <code>track()</code> method</div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="sendEvent('test_click')">Track</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Send a custom event with <code>track()</code></div></div></div>
+  <div class="card-actions"><button onclick="sendEvent('test_click')">Track</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Record a page view via the <code>page()</code> method</div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="sendPageView()">Page View</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Record a page view via <code>page()</code></div></div></div>
+  <div class="card-actions"><button onclick="sendPageView()">Page View</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Set a custom visitor ID via <code>identify()</code></div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="identifyVisitor()">Identify</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Set a custom visitor ID via <code>identify()</code></div></div></div>
+  <div class="card-actions"><button onclick="identifyVisitor()" class="blue">Identify</button></div>
+</div>
+
+<div class="section-title">Screenshots</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Capture DOM screenshot via <code>screenshot()</code></div></div></div>
+  <div class="card-actions"><button onclick="captureScreenshot()">Screenshot</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Capture a DOM screenshot via <code>screenshot()</code></div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="captureScreenshot()">Screenshot</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Trigger a smart screenshot via <code>requestScreenshot('test')</code></div></div></div>
+  <div class="card-actions"><button onclick="triggerSmartScreenshot()" class="blue">Smart Shot</button></div>
 </div>
 
 <div class="section-title">Console Triggers</div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Trigger a <code>console.error()</code> to test auto-tracking</div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="triggerConsoleError()">console.error</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Trigger <code>console.error()</code> — tests auto-tracking</div></div></div>
+  <div class="card-actions"><button onclick="triggerConsoleError()" class="red">console.error</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Trigger a <code>console.warn()</code> to test auto-tracking</div></div>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Trigger <code>console.warn()</code> — tests auto-tracking</div></div></div>
+  <div class="card-actions"><button onclick="triggerConsoleWarn()" class="yellow">console.warn</button></div>
+</div>
+
+<div class="section-title">Frustration Signals (simulated)</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Simulate rage clicks on a test button</div></div></div>
+  <div class="card-actions"><button onclick="simulateRageClick()" class="red">Rage Click</button></div>
+</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Simulate a dead click (no DOM change)</div></div></div>
+  <div class="card-actions"><button onclick="simulateDeadClick()" class="red">Dead Click</button></div>
+</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Simulate hesitation hover</div></div></div>
+  <div class="card-actions"><button onclick="simulateHesitation()" class="yellow">Hesitation</button></div>
+</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Simulate scroll chaos (rapid direction changes)</div></div></div>
+  <div class="card-actions"><button onclick="simulateScrollChaos()" class="yellow">Scroll Chaos</button></div>
+</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Simulate cascade (multiple signal types)</div></div></div>
+  <div class="card-actions"><button onclick="simulateCascade()" class="red">Cascade</button></div>
+</div>
+
+<div class="section-title">Auto-Tracker</div>
+<div class="card">
+  <div class="card-left"><div><div class="card-desc">Auto-tracking is active when SDK initializes. Click or submit on elements with <code>data-sonar-track</code>.</div></div></div>
   <div class="card-actions">
-    <button onclick="triggerConsoleWarn()">console.warn</button>
+    <button data-sonar-track="test-track-btn" onclick="logMsg('info', 'data-sonar-track click logged')">Tracked Click</button>
+    <a href="#" data-sonar-ignore onclick="logMsg('warn', 'data-sonar-ignore — not tracked');return false">Ignored</a>
   </div>
 </div>
 
 <div class="section-title">Consent</div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Grant consent to start/resume tracking</div></div>
-  </div>
-  <div class="card-actions">
-    <button class="green" onclick="grantConsent()">Grant</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Grant consent to resume tracking</div></div></div>
+  <div class="card-actions"><button class="green" onclick="grantConsent()">Grant</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Revoke consent to stop tracking</div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="denyConsent()">Revoke</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Revoke consent to stop tracking</div></div></div>
+  <div class="card-actions"><button onclick="denyConsent()" class="red">Revoke</button></div>
 </div>
 <div class="card">
-  <div class="card-left">
-    <div><div class="card-desc">Flush queued events immediately</div></div>
-  </div>
-  <div class="card-actions">
-    <button onclick="flushEvents()">Flush</button>
-  </div>
+  <div class="card-left"><div><div class="card-desc">Flush queued events immediately</div></div></div>
+  <div class="card-actions"><button onclick="flushEvents()">Flush</button></div>
 </div>
 
-<div class="section-title">Result</div>
-<div id="result" class="result">Ready</div>
+<div class="section-title">Log</div>
+<div id="result" class="result" style="margin-bottom:8px">Ready</div>
+<div id="log" class="log"></div>
 
 <div class="config-box">
   <label>API Key</label>
   <input id="api-key" type="text" placeholder="wdp_..." value="__SONAR_API_KEY__" />
   <label>Endpoint</label>
   <input id="endpoint" type="text" value="http://localhost:8080" />
-  <div style="display:flex;gap:8px;margin-top:12px">
+  <div class="config-row">
     <button onclick="initSonar()" class="green" style="padding:8px 20px;font-size:13px">Initialize SonarWeb</button>
+    <button onclick="initSonarFull()" class="blue" style="padding:8px 20px;font-size:13px">Init + All Features</button>
     <button onclick="destroySonar()" style="padding:8px 20px;font-size:13px">Destroy</button>
   </div>
 </div>
@@ -142,16 +158,25 @@
 <script type="module">
   let sonar = null
   let eventCount = 0
+  const logs = []
+
+  function logMsg(cls, msg) {
+    const el = document.getElementById('log')
+    const ts = new Date().toLocaleTimeString()
+    logs.push({ cls, msg, ts })
+    el.innerHTML = logs.slice(-50).map(function(l) {
+      return '<div class="' + l.cls + '">[' + l.ts + '] ' + l.msg + '</div>'
+    }).join('')
+    el.scrollTop = el.scrollHeight
+  }
+
+  logMsg('info', 'Page loaded. Configure API key and initialize.')
 
   window.initSonar = async function() {
     try {
       const apiKey = document.getElementById('api-key').value.trim()
       const endpoint = document.getElementById('endpoint').value.trim() || 'http://localhost:8080'
-
-      if (!apiKey) {
-        showResult('API key is required', true)
-        return
-      }
+      if (!apiKey) { showResult('API key is required', true); return }
 
       const { SonarWeb } = await import('/sdk/index.browser.js')
 
@@ -169,7 +194,6 @@
         sessionRecording: {
           enabled: true,
           sampleIntervalMs: 200,
-          video: true,
         },
         captureScreenshots: {
           enabled: true,
@@ -186,13 +210,88 @@
       })
 
       updateStatus(sonar)
-      showResult('SonarWeb initialized', false)
-
-      sonar.track('sdk_init', { version: '0.1.0' })
+      showResult('SonarWeb initialized (basic)')
+      logMsg('info', 'SonarWeb initialized with autoTrack + sessionRecording + screenshots + consent')
+      sonar.track('sdk_init', { version: '0.1.0', mode: 'basic' })
       eventCount++
       updateEventCount()
     } catch (err) {
       showResult(String(err), true)
+      logMsg('err', 'Init failed: ' + String(err))
+    }
+  }
+
+  window.initSonarFull = async function() {
+    try {
+      const apiKey = document.getElementById('api-key').value.trim()
+      const endpoint = document.getElementById('endpoint').value.trim() || 'http://localhost:8080'
+      if (!apiKey) { showResult('API key is required', true); return }
+
+      const { SonarWeb } = await import('/sdk/index.browser.js')
+
+      sonar = new SonarWeb({
+        apiKey,
+        endpoint,
+        autoTrack: {
+          pageViews: true,
+          linkClicks: true,
+          formSubmissions: true,
+          scrollDepth: true,
+          consoleErrors: true,
+          clickTracking: true,
+        },
+        sessionRecording: {
+          enabled: true,
+          sampleIntervalMs: 100,
+          video: true,
+        },
+        captureScreenshots: {
+          enabled: true,
+          onError: true,
+          quality: 0.8,
+        },
+        consent: {
+          banner: {
+            position: 'bottom-right',
+            text: 'Sonar testing-hub uses analytics to improve your experience.',
+            acceptText: 'Accept',
+            declineText: 'Decline',
+            privacyPolicyUrl: '/privacy',
+            theme: 'dark',
+          },
+        },
+        intelligence: {
+          frustration: {
+            enabled: true,
+            rageClick: { enabled: true, threshold: 3, windowMs: 2000 },
+            deadClick: { enabled: true, timeoutMs: 2000 },
+            hesitation: { enabled: true, thresholdMs: 800 },
+            scrollChaos: { enabled: true },
+            cascadeDetection: { enabled: true, windowMs: 5000 },
+          },
+          screenshots: {
+            enabled: true,
+            quality: 0.8,
+            triggers: {
+              onError: true,
+              onRageClick: true,
+              onDeadClick: true,
+              onUnload: true,
+            },
+          },
+        },
+        release: 'testing-hub@0.1.0',
+      })
+
+      updateStatus(sonar)
+      showResult('SonarWeb initialized (full features)')
+      logMsg('info', 'SonarWeb initialized with all features: autoTrack + sessionRecording + video + screenshots + intelligence (frustration)')
+      sonar.track('sdk_init', { version: '0.1.0', mode: 'full' })
+      eventCount++
+      updateEventCount()
+    } catch (err) {
+      showResult(String(err), true)
+      logMsg('err', 'Full init failed: ' + String(err))
     }
   }
 
@@ -201,7 +300,10 @@
       sonar.destroy()
       sonar = null
       showResult('SonarWeb destroyed')
+      logMsg('info', 'SonarWeb destroyed, transport flushed')
       document.getElementById('val-consent').textContent = '—'
+      document.getElementById('val-visitor').textContent = '—'
+      document.getElementById('val-session').textContent = '—'
     }
   }
 
@@ -210,7 +312,8 @@
     sonar.track(name, { timestamp: Date.now(), source: 'testing-hub' })
     eventCount++
     updateEventCount()
-    showResult(`Tracked: ${name}`)
+    showResult('Tracked: ' + name)
+    logMsg('info', 'track() — ' + name)
   }
 
   window.sendPageView = function() {
@@ -219,13 +322,15 @@
     eventCount++
     updateEventCount()
     showResult('Page view recorded')
+    logMsg('info', 'page() — test_page')
   }
 
   window.identifyVisitor = function() {
     if (!sonar) { showResult('SDK not initialized', true); return }
     const vid = 'test_user_' + Date.now().toString(36)
-    sonar.identify(vid, { role: 'tester' })
-    showResult(`Identified: ${vid}`)
+    sonar.identify(vid, { role: 'tester', source: 'testing-hub' })
+    showResult('Identified: ' + vid)
+    logMsg('info', 'identify() — ' + vid)
     updateStatus(sonar)
   }
 
@@ -234,26 +339,38 @@
     try {
       const data = await sonar.screenshot()
       if (data) {
-        sonar.track('screenshot', { data, size: data.length })
+        sonar.track('screenshot', { data: data.slice(0, 100) + '...', size: data.length })
         eventCount++
         updateEventCount()
-        showResult(`Screenshot captured (${data.length} chars)`)
+        showResult('Screenshot captured (' + data.length + ' chars)')
+        logMsg('info', 'screenshot() — ' + data.length + ' chars')
       } else {
         showResult('Screenshot unavailable (html2canvas not loaded)')
+        logMsg('warn', 'screenshot() — html2canvas not available')
       }
     } catch (err) {
       showResult(String(err), true)
+      logMsg('err', 'screenshot() failed: ' + String(err))
     }
+  }
+
+  window.triggerSmartScreenshot = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.requestScreenshot('manual_test')
+    showResult('Smart screenshot requested')
+    logMsg('info', 'requestScreenshot(manual_test)')
   }
 
   window.triggerConsoleError = function() {
     console.error('Test error from testing-hub at', new Date().toISOString())
     showResult('console.error triggered')
+    logMsg('info', 'console.error() triggered')
   }
 
   window.triggerConsoleWarn = function() {
     console.warn('Test warning from testing-hub at', new Date().toISOString())
     showResult('console.warn triggered')
+    logMsg('info', 'console.warn() triggered')
   }
 
   window.grantConsent = function() {
@@ -261,6 +378,7 @@
     sonar.setConsent('granted')
     updateStatus(sonar)
     showResult('Consent granted')
+    logMsg('info', 'setConsent(granted)')
   }
 
   window.denyConsent = function() {
@@ -268,21 +386,99 @@
     sonar.setConsent('denied')
     updateStatus(sonar)
     showResult('Consent revoked')
+    logMsg('info', 'setConsent(denied)')
   }
 
   window.flushEvents = function() {
     if (!sonar) { showResult('SDK not initialized', true); return }
-    sonar.track('flush_test', {})
-    showResult('Event sent (auto-flush will handle it)')
+    sonar.track('flush_test', { manual: true })
+    showResult('Event sent via track()')
+    logMsg('info', 'track(flush_test)')
+  }
+
+  window.simulateRageClick = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    // Fire 5 rapid frustration events simulating rage clicks
+    for (var i = 0; i < 5; i++) {
+      sonar.track('frustration_rage_click', {
+        count: i + 1,
+        element: '#rage-test-btn',
+        timestamp: Date.now(),
+      })
+      eventCount++
+    }
+    updateEventCount()
+    showResult('Simulated 5 rage clicks')
+    logMsg('info', 'Simulated 5 rage clicks via track()')
+  }
+
+  window.simulateDeadClick = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track('frustration_dead_click', {
+      element: '#dead-btn',
+      selector: 'button',
+      text: 'Submit',
+      timestamp: Date.now(),
+    })
+    eventCount++
+    updateEventCount()
+    showResult('Simulated dead click')
+    logMsg('info', 'Simulated dead click via track()')
+  }
+
+  window.simulateHesitation = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track('frustration_hesitation', {
+      element: '#checkout-btn',
+      hoverDuration: 2300,
+      timestamp: Date.now(),
+    })
+    eventCount++
+    updateEventCount()
+    showResult('Simulated hesitation')
+    logMsg('info', 'Simulated hesitation via track()')
+  }
+
+  window.simulateScrollChaos = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track('frustration_scroll_chaos', {
+      directionChanges: 4,
+      duration: 2000,
+      timestamp: Date.now(),
+    })
+    eventCount++
+    updateEventCount()
+    showResult('Simulated scroll chaos')
+    logMsg('info', 'Simulated scroll chaos via track()')
+  }
+
+  window.simulateCascade = function() {
+    if (!sonar) { showResult('SDK not initialized', true); return }
+    sonar.track('frustration_cascade', {
+      signals: ['rage_click', 'dead_click', 'hesitation'],
+      windowMs: 5000,
+      count: 3,
+      timestamp: Date.now(),
+    })
+    eventCount++
+    updateEventCount()
+    showResult('Simulated cascade detection')
+    logMsg('info', 'Simulated cascade frustration via track()')
   }
 
   function updateStatus(s) {
-    const consent = s.getConsent ? s.getConsent() : '?'
+    var consent = s.getConsent ? s.getConsent() : '?'
     document.getElementById('val-consent').textContent = consent
-    const badge = document.querySelector('#val-consent')
+    var badge = document.querySelector('#val-consent')
     badge.className = 'val ' + (
       consent === 'granted' ? 'badge green' : consent === 'denied' ? 'badge red' : 'badge yellow'
     )
+    if (s.visitorId) {
+      document.getElementById('val-visitor').textContent = s.visitorId.slice(0, 8) + '...'
+    }
+    if (s.sessionId) {
+      document.getElementById('val-session').textContent = s.sessionId.slice(0, 8) + '...'
+    }
   }
 
   function updateEventCount() {
@@ -290,14 +486,14 @@
   }
 
   function showResult(msg, isErr) {
-    const el = document.getElementById('result')
+    var el = document.getElementById('result')
     el.className = 'result ' + (isErr ? 'err' : 'ok')
     el.textContent = msg
   }
 
   // Fill API key from URL params or localStorage
-  const params = new URLSearchParams(window.location.search)
-  const key = params.get('apiKey') || localStorage.getItem('sonar_test_api_key')
+  var params = new URLSearchParams(window.location.search)
+  var key = params.get('apiKey') || localStorage.getItem('sonar_test_api_key')
   if (key) {
     document.getElementById('api-key').value = key
   }

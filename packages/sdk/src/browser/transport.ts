@@ -110,9 +110,7 @@ export class BatchTransport {
   }
 
   private flushSync() {
-    if (this.flushing || this.buffer.length === 0) return
-    this.flushing = true
-
+    if (this.buffer.length === 0) return
     const batch = this.buffer.splice(0, this.buffer.length)
     const payload: Record<string, unknown> = { events: batch }
     if (this.session) payload.session = this.session
@@ -130,6 +128,5 @@ export class BatchTransport {
     } catch {
       // best-effort
     }
-    this.flushing = false
   }
 }

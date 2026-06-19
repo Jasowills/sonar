@@ -6,6 +6,7 @@ import { LogoMark } from '@/components/logo'
 import { Avatar } from '@/components/avatar'
 import { SEO } from '@/lib/seo'
 import { Spinner } from '@/components/spinner'
+import { Button } from '@/components/ui/button'
 import { useEventSource } from '@/lib/event-source'
 
 import { navigationGroups } from '@/data/navigation'
@@ -34,6 +35,7 @@ function UserMenu() {
   const { state, signOut } = useAuth()
   const [showConfirm, setShowConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [animateIn, setAnimateIn] = useState(false)
 
   if (state.status !== 'authenticated') return null
 
@@ -48,6 +50,16 @@ function UserMenu() {
     }, 300)
   }
 
+  const openDialog = () => {
+    setShowConfirm(true)
+    requestAnimationFrame(() => setAnimateIn(true))
+  }
+
+  const closeDialog = () => {
+    setAnimateIn(false)
+    setTimeout(() => setShowConfirm(false), 150)
+  }
+
   return (
     <div className="flex items-center gap-2.5">
       <Avatar src={avatar} name={name} />
@@ -55,7 +67,7 @@ function UserMenu() {
         {name}
       </span>
       <button
-        onClick={() => setShowConfirm(true)}
+        onClick={openDialog}
         className="flex h-8 w-8 items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
         title="Sign out"
       >
@@ -63,30 +75,60 @@ function UserMenu() {
       </button>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowConfirm(false)}>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-150"
+          style={{ opacity: animateIn ? 1 : 0 }}
+          onClick={closeDialog}
+        >
           <div
-            className="w-80 border border-[var(--border-soft)] bg-[var(--surface-page)] p-6"
+            className="w-80 border border-[var(--border-soft)] bg-[var(--surface-page)] transition-all duration-200"
+            style={{
+              opacity: animateIn ? 1 : 0,
+              transform: animateIn ? 'translateY(0) scale(1)' : 'translateY(4px) scale(0.98)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm font-semibold text-[var(--text-main)]">Sign out</p>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">
-              Are you sure you want to sign out?
-            </p>
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="border border-[var(--border-soft)] px-3 py-1.5 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSignOut}
-                disabled={signingOut}
-                className="flex items-center gap-1.5 border border-[var(--border-soft)] bg-[var(--surface-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--text-main)] hover:border-[var(--border-strong)] disabled:opacity-50"
-              >
-                {signingOut && <Spinner />}
-                Sign out
-              </button>
+            <div className="h-0.5 w-full bg-[var(--dot-down)]" />
+
+            <div className="p-5">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--dot-down)] opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--dot-down)]" />
+                </span>
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-[var(--dot-down)]">
+                  Session
+                </span>
+              </div>
+
+              <div className="mt-4 flex items-center gap-3">
+                <Avatar src={avatar} name={name} />
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-main)]">{name}</p>
+                  {user.email && (
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">{user.email}</p>
+                  )}
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm text-[var(--text-muted)]">
+                Are you sure you want to sign out of Sonar?
+              </p>
+
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <Button variant="outline" size="sm" onClick={closeDialog}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                >
+                  {signingOut && <Spinner />}
+                  Sign out
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -255,7 +297,7 @@ Sonar
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1440px]">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-[1440px]">
         {/* Sidebar overlay (mobile) */}
         {sidebarOpen && (
           <div

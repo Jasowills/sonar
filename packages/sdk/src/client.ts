@@ -28,45 +28,59 @@ export class SonarClient {
   }
 
   async ingestError(payload: CaptureErrorPayload): Promise<IngestResponse> {
-    const res = await fetch(`${this.endpoint}/ingest/errors`, {
-      method: 'POST',
-      headers: this.authHeaders,
-      body: JSON.stringify({
-        ...payload,
-        metadata: payload.metadata ? JSON.stringify(payload.metadata) : undefined,
-        environmentKey: this.environment,
-      }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      const hint = res.status === 401
-        ? ' — check that SONAR_API_KEY is set and valid'
-        : ''
-      throw new Error(body?.message ?? `Failed to ingest error (${res.status})${hint}`)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10_000)
+    try {
+      const res = await fetch(`${this.endpoint}/ingest/errors`, {
+        method: 'POST',
+        headers: this.authHeaders,
+        body: JSON.stringify({
+          ...payload,
+          metadata: payload.metadata ? JSON.stringify(payload.metadata) : undefined,
+          environmentKey: this.environment,
+        }),
+        signal: controller.signal,
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        const hint = res.status === 401
+          ? ' — check that SONAR_API_KEY is set and valid'
+          : ''
+        throw new Error(body?.message ?? `Failed to ingest error (${res.status})${hint}`)
+      }
+      return res.json() as Promise<IngestResponse>
+    } finally {
+      clearTimeout(timer)
     }
-    return res.json() as Promise<IngestResponse>
   }
 
   async recordDeployment(payload: RecordDeploymentOptions): Promise<IngestResponse> {
-    const res = await fetch(`${this.endpoint}/ingest/deployments`, {
-      method: 'POST',
-      headers: this.authHeaders,
-      body: JSON.stringify({
-        version: payload.version,
-        status: payload.status,
-        description: payload.description,
-        deployedBy: payload.deployedBy,
-        serviceId: payload.serviceId,
-        environmentKey: this.environment,
-      }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      const hint = res.status === 401
-        ? ' — check that SONAR_API_KEY is set and valid'
-        : ''
-      throw new Error(body?.message ?? `Failed to record deployment (${res.status})${hint}`)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10_000)
+    try {
+      const res = await fetch(`${this.endpoint}/ingest/deployments`, {
+        method: 'POST',
+        headers: this.authHeaders,
+        body: JSON.stringify({
+          version: payload.version,
+          status: payload.status,
+          description: payload.description,
+          deployedBy: payload.deployedBy,
+          serviceId: payload.serviceId,
+          environmentKey: this.environment,
+        }),
+        signal: controller.signal,
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        const hint = res.status === 401
+          ? ' — check that SONAR_API_KEY is set and valid'
+          : ''
+        throw new Error(body?.message ?? `Failed to record deployment (${res.status})${hint}`)
+      }
+      return res.json() as Promise<IngestResponse>
+    } finally {
+      clearTimeout(timer)
     }
-    return res.json() as Promise<IngestResponse>
   }
 }

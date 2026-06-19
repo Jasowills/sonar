@@ -49,7 +49,7 @@ const features = [
     icon: Radar,
     num: '01',
     title: 'Uptime monitoring',
-    desc: 'HTTP checks with status-code and keyword assertions, on the cadence you set — scoped per service and per environment.',
+    desc: 'HTTP checks with status-code and keyword assertions on the cadence you set, scoped per service and per environment.',
     span: 'lg:col-span-4',
   },
   {
@@ -63,35 +63,35 @@ const features = [
     icon: BellRing,
     num: '03',
     title: 'Alert routing',
-    desc: 'Email, Slack, and webhook channels with rules calm enough to actually keep on.',
+    desc: '            Email, Slack, and webhook channels with rules you can keep on.',
     span: 'lg:col-span-2',
   },
   {
     icon: Siren,
     num: '04',
     title: 'Incident timelines',
-    desc: 'Detected to resolved — every update in one legible thread the whole team reads.',
+    desc: 'From detection to resolution. Every update in one thread.',
     span: 'lg:col-span-2',
   },
   {
     icon: LifeBuoy,
     num: '05',
     title: 'Status pages',
-    desc: 'Branded public pages that inherit the same quiet language as the product.',
+    desc: 'Branded public pages that speak the same language as the product.',
     span: 'lg:col-span-2',
   },
   {
     icon: Package,
     num: '06',
     title: 'Deploy correlation',
-    desc: 'Every release lands on the same timeline as your incidents and latency — so root-cause starts with a fact, not a guess.',
+    desc: 'Every release lands on the same timeline as your incidents and latency. Root-cause starts with a fact.',
     span: 'lg:col-span-3',
   },
   {
     icon: BarChart3,
     num: '07',
     title: 'Web analytics',
-    desc: 'Page views, clicks, scrolls, and session recording built into every project — with GDPR-friendly consent baked in.',
+    desc: 'Page views, clicks, scrolls, session recording. GDPR-friendly consent baked in.',
     span: 'lg:col-span-3',
   },
 ]
@@ -105,12 +105,12 @@ const steps = [
   {
     n: '02',
     title: 'Watch',
-    body: 'Sonar checks, traces, and correlates around the clock — quietly, without noise.',
+    body: 'Sonar checks, traces, and correlates around the clock.',
   },
   {
     n: '03',
     title: 'Respond',
-    body: 'When something drifts, the right people get one clear, routed signal — not forty.',
+    body: 'When something drifts, one routed signal reaches the right people.',
   },
 ]
 
@@ -206,9 +206,8 @@ function Hero({ onNavigate }: { onNavigate: (target: string) => void }) {
           data-hero-item
           className="mx-auto mt-6 max-w-xl text-base leading-7 text-[var(--text-muted)] lg:text-lg"
         >
-          Sonar unifies uptime checks, error tracing, web analytics, alerting,
-          and incident response on one quiet operational surface — so a
-          three-person team can run like a platform org.
+          Uptime checks, error tracing, web analytics, alerting,
+          and incident response on one surface.
         </p>
 
         <div
@@ -291,7 +290,7 @@ function Features() {
         <div data-reveal className="max-w-2xl">
           <p className={sectionEyebrow}>Product</p>
           <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-[var(--text-main)]">
-            The signals your stack needs. One surface.
+            Your stack's signals. One surface.
           </h2>
         </div>
 
@@ -370,8 +369,8 @@ function Steps() {
 function DeploySpotlight() {
   const points = [
     'Record deploys from CI with a single POST request',
-    'See every release beside the incident that followed it',
-    'Roll-backs and failed deploys flagged inline on the timeline',
+    'Match each release to the incident that followed it',
+    'Flag roll-backs and failed deploys inline on the timeline',
   ]
 
   return (
@@ -384,7 +383,7 @@ function DeploySpotlight() {
           </h2>
           <p className="mt-5 max-w-md text-base leading-7 text-[var(--text-muted)]">
             Every release lands on the same timeline as your incidents and
-            latency. The first question of every outage stops being a guess.
+            latency.           The first question of an outage stops being a guess.
           </p>
           <ul className="mt-8 space-y-3.5">
             {points.map((point) => (
@@ -462,10 +461,9 @@ function FinalCta() {
           <br />
           have a platform team.
         </h2>
-        <p className="relative mx-auto mt-5 max-w-md text-base text-[var(--text-muted)]">
-          One surface for uptime, errors, alerts, incidents, and status. Open it
-          and see.
-        </p>
+          <p className="relative mx-auto mt-5 max-w-md text-base text-[var(--text-muted)]">
+            One surface for uptime, errors, alerts, incidents, and status. Open it.
+          </p>
         <div className="relative mt-9 flex justify-center">
           <Link to="/app/overview" className={primaryCta}>
             Get started
@@ -479,10 +477,10 @@ function FinalCta() {
 
 function AnalyticsSpotlight() {
   const points = [
-    'One SDK tag — page views, clicks, scrolls, and form submissions out of the box',
-    'Session recording replays the exact user flow as video, no extra instrumentation',
-    'Built-in GDPR consent banner with DNT and Global Privacy Control detection',
-    'Zero third-party scripts — every event stays inside your infrastructure',
+    'One SDK tag gives you page views, clicks, scrolls, and form submissions out of the box',
+    'Session recording replays the exact user flow as video with no extra instrumentation',
+    'Built-in GDPR consent with DNT and Global Privacy Control detection',
+    'Every event stays inside your infrastructure. No third-party scripts.',
   ]
 
   return (
@@ -497,9 +495,7 @@ function AnalyticsSpotlight() {
           </h2>
           <p className="mt-5 max-w-md text-base leading-7 text-[var(--text-muted)]">
             Page views, click maps, scroll depth, form analytics, and video session
-            recordings — all captured by the same first-party SDK that powers
-            your error tracing. No Google tag, no third-party scripts, no
-            cookie banners.
+            recordings from a single first-party SDK.
           </p>
           <ul className="mt-8 space-y-3.5">
             {points.map((point) => (
@@ -599,8 +595,7 @@ function Footer({ onNavigate }: { onNavigate: (target: string) => void }) {
           </div>
           <p className="max-w-xs text-xs leading-6 text-[var(--text-muted)]">
             Observability for developers. Uptime checks, error tracing,
-            alert routing, incident timelines, and status pages — on one quiet
-            operational surface.
+            alert routing, incident timelines, and status pages on one surface.
           </p>
         </div>
 

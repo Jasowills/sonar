@@ -92,22 +92,20 @@ export class VideoRecorder {
   private async upload() {
     if (!this.recorded) return
     const blob = this.recorded
-    this.recorded = null
-
+    const formData = new FormData()
+    formData.append('video', blob, `session-${this.host.sessionId}.webm`)
+    formData.append('sessionId', this.host.sessionId)
     try {
-      const formData = new FormData()
-      formData.append('video', blob, `session-${this.host.sessionId}.webm`)
-      formData.append('sessionId', this.host.sessionId)
-
-      fetch(`${this.host.endpoint}/ingest/session-video`, {
+      await fetch(`${this.host.endpoint}/ingest/session-video`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.host.apiKey}` },
         body: formData,
         keepalive: true,
       })
     } catch {
-      // upload failed, best-effort
+      // best-effort
     }
+    this.recorded = null
   }
 
   destroy() {
@@ -125,7 +123,7 @@ export class VideoRecorder {
     this.stream?.getTracks().forEach((t) => t.stop())
     this.stream = null
 
-    setTimeout(() => this.upload(), 100)
+    this.upload()
 
     if (this.canvas?.parentNode) this.canvas.parentNode.removeChild(this.canvas)
   }

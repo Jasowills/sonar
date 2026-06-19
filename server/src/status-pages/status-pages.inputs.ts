@@ -19,6 +19,9 @@ export class UpdateStatusPageInput {
   @Field({ nullable: true }) @IsOptional() @IsString() faviconUrl?: string;
   @Field({ nullable: true }) @IsOptional() @IsString() brandColor?: string;
   @Field({ nullable: true }) @IsOptional() @IsString() footerText?: string;
+  @Field({ nullable: true }) @IsOptional() @IsString() theme?: string;
+  @Field({ nullable: true }) @IsOptional() @IsString() darkLogoUrl?: string;
+  @Field({ nullable: true }) @IsOptional() @IsString() logoLinkUrl?: string;
 }
 
 @InputType()

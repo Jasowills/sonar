@@ -869,6 +869,9 @@ export type StatusPage = {
   headline: string | null
   visibility: string
   logoUrl: string | null
+  theme: string
+  darkLogoUrl: string | null
+  logoLinkUrl: string | null
   createdAt: string
   updatedAt: string
   workspaceId: string
@@ -888,6 +891,8 @@ const STATUS_PAGES_QUERY = gql`
       workspaceId
       workspaceSlug
       projectId
+      createdAt
+      updatedAt
     }
   }
 `
@@ -1918,7 +1923,7 @@ export type StatusPageDetail = StatusPage & {
 const STATUS_PAGE_QUERY = gql`
   query StatusPage($id: String!) {
     statusPage(id: $id) {
-      id name slug headline visibility logoUrl faviconUrl brandColor footerText
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText theme darkLogoUrl logoLinkUrl
       createdAt updatedAt workspaceId workspaceSlug projectId
       services {
         id serviceId name displayName groupName isVisible status latencyMs sortOrder
@@ -1930,7 +1935,7 @@ const STATUS_PAGE_QUERY = gql`
 const STATUS_PAGE_BY_SLUG_QUERY = gql`
   query StatusPageBySlug($workspaceSlug: String!, $slug: String!) {
     statusPageBySlug(workspaceSlug: $workspaceSlug, slug: $slug) {
-      id name slug headline visibility logoUrl faviconUrl brandColor footerText
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText theme darkLogoUrl logoLinkUrl
       createdAt updatedAt workspaceId workspaceSlug projectId
       services {
         id serviceId name displayName groupName isVisible status latencyMs sortOrder
@@ -1968,7 +1973,7 @@ export function useStatusPageBySlug(workspaceSlug: string, slug: string) {
 const UPDATE_STATUS_PAGE = gql`
   mutation UpdateStatusPage($input: UpdateStatusPageInput!) {
     updateStatusPage(input: $input) {
-      id name slug headline visibility logoUrl faviconUrl brandColor footerText
+      id name slug headline visibility logoUrl faviconUrl brandColor footerText theme darkLogoUrl logoLinkUrl
     }
   }
 `
@@ -2003,6 +2008,9 @@ export function useUpdateStatusPage() {
       faviconUrl?: string | null
       brandColor?: string | null
       footerText?: string | null
+      darkLogoUrl?: string | null
+      logoLinkUrl?: string | null
+      theme?: string
     }) => {
       const data = await graphqlClient.request<{
         updateStatusPage: StatusPage
@@ -2551,7 +2559,7 @@ const ERROR_SUMMARY_QUERY = gql`
 `
 
 const INCIDENT_CORRELATION_QUERY = gql`
-  query IncidentCorrelation($incidentId: ID!) {
+  query IncidentCorrelation($incidentId: String!) {
     incidentCorrelation(incidentId: $incidentId) {
       incidentId
       narrative
@@ -2609,7 +2617,7 @@ const ANALYTICS_INSIGHTS_QUERY = gql`
 `
 
 const INCIDENT_ROOT_CAUSE_MUTATION = gql`
-  mutation GenerateIncidentRootCause($incidentId: ID!) {
+  mutation GenerateIncidentRootCause($incidentId: String!) {
     generateIncidentRootCause(incidentId: $incidentId) {
       incidentId
       narrative

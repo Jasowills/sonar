@@ -337,7 +337,16 @@ export class AnalyticsService {
       userAgent?: string; pageViews?: number; eventCount?: number; isBounce?: boolean;
     } | null,
     projectId?: string,
+    projectKey?: string,
   ) {
+    if (!projectId && projectKey) {
+      const project = await this.prisma.project
+        .findFirst({ where: { slug: projectKey }, select: { id: true } })
+        .catch(() => null);
+      if (project) {
+        projectId = project.id;
+      }
+    }
     if (!projectId || events.length === 0) return;
 
     const now = new Date();

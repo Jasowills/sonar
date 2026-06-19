@@ -18,6 +18,6 @@ export class AnalyticsController {
     }));
     const types = events.map((e) => e.type).join(', ');
     console.log(`[analytics] ingested ${events.length} events (${types}) for project ${req.projectId} session=${input.session?.sessionId ?? 'none'}`);
-    return this.analyticsService.ingest(events, input.session ?? null, req.projectId!);
+    return this.analyticsService.ingest(events, input.session ?? null, req.projectId, input.projectKey);
   }
 }

@@ -1,8 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { sanitizeError, parseGraphqlError } from '@/lib/utils'
-import { AlertTriangle, LifeBuoy, Plus, ExternalLink, Settings } from 'lucide-react'
+import { AlertTriangle, Plus, ExternalLink, Settings, Radio, Loader2, Globe, Lock, ChevronRight } from 'lucide-react'
 import { useStatusPages, useCreateStatusPage, useWorkspaces } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+
+const LABEL_CLS = 'font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-soft)]'
+
+function timeAgo(date: string): string {
+  const ms = Date.now() - new Date(date).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(date).toLocaleDateString()
+}
 
 export function StatusPagesPage() {
   const navigate = useNavigate()
@@ -18,26 +33,6 @@ export function StatusPagesPage() {
   const clientUrl = import.meta.env.VITE_CLIENT_URL ?? 'http://localhost:3000'
   const workspaceSlug = workspace?.slug
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="text-sm text-[var(--text-muted)]">Loading status pages…</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <AlertTriangle className="mb-4 h-10 w-10 text-[var(--text-muted)]" />
-        <p className="text-lg font-semibold text-[var(--text-main)]">Failed to load status pages</p>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">
-          {sanitizeError(error)}
-        </p>
-      </div>
-    )
-  }
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -52,125 +47,225 @@ export function StatusPagesPage() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-8">
+          <div className="h-5 w-40 rounded bg-[var(--border-soft)] animate-pulse" />
+          <div className="mt-2 h-4 w-72 rounded bg-[var(--border-soft)] animate-pulse" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)]"
+              style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'backwards' }}
+            >
+              <div className="h-1 w-full rounded-t-lg bg-[var(--border-soft)]" />
+              <div className="space-y-3 p-5">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-[var(--border-soft)]" />
+                  <div className="h-4 w-24 rounded bg-[var(--border-soft)]" />
+                </div>
+                <div className="h-3 w-full rounded bg-[var(--border-soft)]" />
+                <div className="h-3 w-3/5 rounded bg-[var(--border-soft)]" />
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="h-7 w-7 rounded-md bg-[var(--border-soft)]" />
+                  <div className="h-7 w-7 rounded-md bg-[var(--border-soft)]" />
+                  <div className="ml-auto h-5 w-16 rounded-full bg-[var(--border-soft)]" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] py-20">
+        <AlertTriangle className="mb-4 h-10 w-10 text-[var(--dot-down)]" />
+        <p className="text-lg font-semibold text-[var(--text-main)]">Failed to load status pages</p>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">{sanitizeError(error)}</p>
+      </div>
+    )
+  }
+
   const hasPages = statusPages && statusPages.length > 0
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+    <div>
       {mutationError && (
-        <div className="col-span-full mb-2 space-y-0.5">
+        <div className="mb-6 rounded-lg border border-[var(--dot-down)]/20 bg-[var(--dot-down)]/5 px-4 py-3">
+          <p className={LABEL_CLS}>Error</p>
           {mutationError.map((msg, i) => (
-            <p key={i} className="text-xs text-[var(--dot-down)]">{msg}</p>
+            <p key={i} className="text-sm text-[var(--dot-down)]">{msg}</p>
           ))}
         </div>
       )}
-      <div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="mb-4 flex items-center gap-2 border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
-        >
-          {showForm ? null : <Plus className="h-4 w-4" />}
-          {showForm ? 'Cancel' : 'Create status page'}
-        </button>
 
-        {showForm && (
-          <form onSubmit={handleCreate} className="mb-4 border border-[var(--border-soft)] p-5">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          {hasPages && (
+            <p className="text-xs leading-none text-[var(--text-soft)]">
+              {statusPages.length} {statusPages.length === 1 ? 'page' : 'pages'}
+            </p>
+          )}
+        </div>
+        <Button variant="default" size="sm" onClick={() => setShowForm(!showForm)}>
+          {showForm ? null : <Plus className="h-3.5 w-3.5" />}
+          {showForm ? 'Cancel' : 'New Status Page'}
+        </Button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="mb-8 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] p-5"
+        >
+          <p className={LABEL_CLS}>Create Status Page</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <input
               type="text"
               placeholder="Page name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="mb-3 w-full border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] outline-none"
+              className="rounded-md border border-[var(--border-soft)] bg-[var(--surface-page)] px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none transition-colors focus:border-[var(--text-muted)]"
             />
             <input
               type="text"
-              placeholder="Headline"
+              placeholder="Headline (optional)"
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
-              className="mb-3 w-full border border-[var(--border-soft)] bg-transparent px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] outline-none"
+              className="rounded-md border border-[var(--border-soft)] bg-[var(--surface-page)] px-3 py-2 text-sm text-[var(--text-main)] placeholder:text-[var(--text-soft)] outline-none transition-colors focus:border-[var(--text-muted)]"
             />
-            <button
-              type="submit"
-              className="flex items-center gap-2 border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--surface-panel-soft)]"
-            >
-              <Plus className="h-4 w-4" />
-              Create
-            </button>
-            {mutationError && (
-              <div className="mt-3 space-y-0.5">
-                {mutationError.map((msg, i) => (
-                  <p key={i} className="text-xs text-[var(--dot-down)]">{msg}</p>
-                ))}
-              </div>
-            )}
-          </form>
-        )}
-
-        {!hasPages && !showForm ? (
-          <div className="flex flex-col items-center justify-center border border-[var(--border-soft)] py-16">
-            <LifeBuoy className="mb-4 h-10 w-10 text-[var(--text-muted)]" />
-            <p className="text-lg font-semibold text-[var(--text-main)]">No status pages</p>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Create a public status page to communicate with your users.
-            </p>
           </div>
-        ) : hasPages ? (
-          <div className="divide-y divide-[var(--border-soft)] border border-[var(--border-soft)]">
-            {statusPages.map((page) => (
-              <div
-                key={page.id}
-                onClick={() => navigate(`/app/status-pages/${page.id}`)}
-                className="flex cursor-pointer items-start justify-between gap-4 px-5 py-4 transition-colors hover:bg-[var(--surface-panel-soft)]"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--text-main)]">{page.name}</p>
-                  <p className="truncate text-xs text-[var(--text-muted)]">/{page.workspaceSlug}/{page.slug}</p>
+          <div className="mt-4 flex items-center gap-3">
+            <Button type="submit" variant="default" size="sm">
+              <Plus className="h-3.5 w-3.5" />
+              Create
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {!hasPages && !showForm ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--border-soft)] bg-[var(--surface-panel)] py-20">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-soft)]">
+            <Radio className="h-6 w-6 text-[var(--text-soft)]" />
+          </div>
+          <p className="text-lg font-semibold text-[var(--text-main)]">No status pages yet</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            Create your first public status page to communicate with users.
+          </p>
+          <Button
+            variant="default"
+            size="sm"
+            className="mt-5"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Create Status Page
+          </Button>
+        </div>
+      ) : hasPages ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {statusPages.map((page, i) => (
+            <div
+              key={page.id}
+              onClick={() => navigate(`/app/status-pages/${page.id}`)}
+              className="group relative cursor-pointer overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] transition-all duration-200 hover:border-[var(--border-strong)] hover:shadow-md"
+              style={{
+                animation: 'fadeSlideUp 0.35s ease-out both',
+                animationDelay: `${i * 60}ms`,
+              }}
+            >
+              {/* top accent bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-transparent via-[var(--text-muted)]/10 to-transparent" />
+
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--text-muted)]" />
+                      <p className="truncate text-sm font-medium text-[var(--text-main)]">
+                        {page.name}
+                      </p>
+                    </div>
+                    {page.headline && (
+                      <p className="mt-1 truncate text-xs text-[var(--text-soft)]">
+                        {page.headline}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <a
-                    href={`${clientUrl}/status/${page.workspaceSlug}/${page.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="border border-[var(--border-soft)] px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
+
+                <div className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-[var(--text-soft)]">
+                  <span className="text-[var(--text-muted)]">/</span>
+                  {page.workspaceSlug}/{page.slug}
+                </div>
+
+                <div className="mt-4 flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.open(
+                        `${clientUrl}/status/${page.workspaceSlug}/${page.slug}`,
+                        '_blank',
+                        'noopener,noreferrer'
+                      )
+                    }}
+                    className="rounded-md border border-[var(--border-soft)] p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
                     title="Open public page"
                   >
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <button
-                    onClick={(e) => navigate(`/app/status-pages/${page.id}`)}
-                    className="border border-[var(--border-soft)] px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-panel-soft)]"
-                    title="Edit"
-                  >
-                    <Settings className="h-3 w-3" />
+                    <ExternalLink className="h-3.5 w-3.5" />
                   </button>
-                  <span className="border border-[var(--border-soft)] bg-[var(--surface-panel-soft)] px-2 py-1 text-xs text-[var(--text-muted)]">
-                    {page.visibility}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/app/status-pages/${page.id}`)
+                    }}
+                    className="rounded-md border border-[var(--border-soft)] p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
+                    title="Edit page"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-soft)]">
+                    {page.visibility === 'PUBLIC' ? (
+                      <Globe className="h-2.5 w-2.5" />
+                    ) : (
+                      <Lock className="h-2.5 w-2.5" />
+                    )}
+                    {page.visibility === 'PUBLIC' ? 'Public' : 'Private'}
                   </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
 
-      <section className="border border-[var(--border-soft)] p-5 h-fit">
-        <p className="text-sm font-semibold text-[var(--text-main)]">About status pages</p>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-          Public status pages show real-time service state for your users. Each page
-          maps to a dedicated subdomain and can display the health of selected services.
-        </p>
-        <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
-            Click a page to edit its name, headline, and linked services.
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
-            The public page is live at <code className="text-[var(--text-main)]">/status/&#123;workspace&#125;/&#123;slug&#125;</code>.
-          </li>
-        </ul>
-      </section>
+                <div className="mt-3 flex items-center gap-2 border-t border-[var(--border-soft)] pt-3">
+                  <span className="text-[10px] text-[var(--text-soft)]">
+                    created {timeAgo(page.createdAt)}
+                  </span>
+                  <ChevronRight className="ml-auto h-3 w-3 text-[var(--text-soft)] opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <style>{`
+        @keyframes fadeSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }

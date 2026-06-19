@@ -11,12 +11,13 @@ export class AutoTracker {
   private opts: AutoTrackOptions
   private scrollDepthsReported = new Set<number>()
   private scrollObserver: IntersectionObserver | null = null
+  private scrollSentinel: HTMLDivElement | null = null
   private pushStateOriginal: typeof history.pushState | null = null
   private popStateHandler: (() => void) | null = null
   private clickHandler: ((e: MouseEvent) => void) | null = null
   private submitHandler: ((e: SubmitEvent) => void) | null = null
-  private consoleErrorOriginal: typeof console.error | null = null
-  private consoleWarnOriginal: typeof console.warn | null = null
+  private originalConsoleError: typeof console.error | null = null
+  private originalConsoleWarn: typeof console.warn | null = null
   private active = false
 
   constructor(host: AutoTrackerHost, opts: AutoTrackOptions) {
@@ -61,11 +62,14 @@ export class AutoTracker {
     if (this.scrollObserver) {
       this.scrollObserver.disconnect()
     }
-    if (this.consoleErrorOriginal) {
-      console.error = this.consoleErrorOriginal
+    if (this.scrollSentinel?.parentNode) {
+      this.scrollSentinel.parentNode.removeChild(this.scrollSentinel)
     }
-    if (this.consoleWarnOriginal) {
-      console.warn = this.consoleWarnOriginal
+    if (this.originalConsoleError) {
+      console.error = this.originalConsoleError
+    }
+    if (this.originalConsoleWarn) {
+      console.warn = this.originalConsoleWarn
     }
   }
 
@@ -123,13 +127,13 @@ export class AutoTracker {
   private trackScrollDepth() {
     this.scrollDepthsReported.clear()
 
-    const sentinel = document.createElement('div')
-    sentinel.setAttribute('data-sonar-scroll-sentinel', '')
-    sentinel.style.position = 'absolute'
-    sentinel.style.width = '1px'
-    sentinel.style.height = '1px'
-    sentinel.style.bottom = '0'
-    document.body.appendChild(sentinel)
+    this.scrollSentinel = document.createElement('div')
+    this.scrollSentinel.setAttribute('data-sonar-scroll-sentinel', '')
+    this.scrollSentinel.style.position = 'absolute'
+    this.scrollSentinel.style.width = '1px'
+    this.scrollSentinel.style.height = '1px'
+    this.scrollSentinel.style.bottom = '0'
+    document.body.appendChild(this.scrollSentinel)
 
     this.scrollObserver = new IntersectionObserver(
       (entries) => {
@@ -146,7 +150,7 @@ export class AutoTracker {
       },
       { threshold: 0 },
     )
-    this.scrollObserver.observe(sentinel)
+    this.scrollObserver.observe(this.scrollSentinel)
 
     const onScroll = () => {
       const scrollPct = Math.round(
@@ -176,24 +180,22 @@ export class AutoTracker {
   }
 
   private trackConsoleErrors() {
-    this.consoleErrorOriginal = console.error.bind(console)
+    this.originalConsoleError = console.error
     console.error = (...args: unknown[]) => {
-      const msg = args.map(String).join(' ')
       this.host.track('console_error', {
         category: 'error',
-        name: msg.slice(0, 500),
+        name: args.map(String).join(' ').slice(0, 500),
       })
-      this.consoleErrorOriginal!.apply(console, args)
+      this.originalConsoleError!.apply(console, args)
     }
 
-    this.consoleWarnOriginal = console.warn.bind(console)
+    this.originalConsoleWarn = console.warn
     console.warn = (...args: unknown[]) => {
-      const msg = args.map(String).join(' ')
       this.host.track('console_error', {
         category: 'warn',
-        name: msg.slice(0, 500),
+        name: args.map(String).join(' ').slice(0, 500),
       })
-      this.consoleWarnOriginal!.apply(console, args)
+      this.originalConsoleWarn!.apply(console, args)
     }
   }
 

@@ -276,6 +276,9 @@ model StatusPage {
   faviconUrl    String?
   brandColor    String?
   footerText    String?
+  theme         String               @default("LIGHT")
+  darkLogoUrl   String?
+  logoLinkUrl   String?
   createdAt     DateTime
   updatedAt     DateTime
   workspaceId   String

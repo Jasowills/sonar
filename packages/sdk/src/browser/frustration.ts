@@ -135,6 +135,9 @@ export class FrustrationDetector {
     if (this.scrollHandler) window.removeEventListener('scroll', this.scrollHandler)
     this.stopDeadClick()
     if (this.idleTimer) clearTimeout(this.idleTimer)
+    this.scrollHistory = []
+    this.signalWindow = []
+    this.clickMap.clear()
   }
 
   private handleClick(e: MouseEvent) {

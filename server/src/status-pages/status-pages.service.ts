@@ -123,6 +123,9 @@ export class StatusPagesService {
       if (input.faviconUrl !== undefined) data.faviconUrl = input.faviconUrl;
       if (input.brandColor !== undefined) data.brandColor = input.brandColor;
       if (input.footerText !== undefined) data.footerText = input.footerText;
+      if (input.theme !== undefined) data.theme = input.theme;
+      if (input.darkLogoUrl !== undefined) data.darkLogoUrl = input.darkLogoUrl;
+      if (input.logoLinkUrl !== undefined) data.logoLinkUrl = input.logoLinkUrl;
 
       const page = await this.prisma.statusPage.update({
         where: { id: input.id },
@@ -207,6 +210,9 @@ export class StatusPagesService {
     faviconUrl: string | null;
     brandColor: string | null;
     footerText: string | null;
+    theme: string;
+    darkLogoUrl: string | null;
+    logoLinkUrl: string | null;
     createdAt: Date;
     updatedAt: Date;
     workspaceId: string;
@@ -223,11 +229,180 @@ export class StatusPagesService {
       faviconUrl: page.faviconUrl,
       brandColor: page.brandColor,
       footerText: page.footerText,
+      theme: page.theme,
+      darkLogoUrl: page.darkLogoUrl,
+      logoLinkUrl: page.logoLinkUrl,
       createdAt: page.createdAt,
       updatedAt: page.updatedAt,
       workspaceId: page.workspaceId,
       workspaceSlug: page.workspace.slug,
       projectId: page.projectId,
+    };
+  }
+
+  async getPublicPageData(workspaceSlug: string, slug: string) {
+    const page = await this.prisma.statusPage.findFirst({
+      where: { slug, workspace: { slug: workspaceSlug } },
+      include: {
+        workspace: true,
+        project: { select: { id: true } },
+        services: {
+          include: {
+            service: {
+              include: {
+                monitors: {
+                  include: {
+                    checkResults: {
+                      orderBy: { checkedAt: 'desc' },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+    if (!page) return null;
+
+    const now = new Date();
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+    const servicesWithUptime = await Promise.all(
+      page.services.map(async (s) => {
+        const latestCheck = s.service.monitors[0]?.checkResults[0];
+        const status = latestCheck?.state ?? 'PENDING';
+
+        const monitorIds = s.service.monitors.map((m) => m.id);
+        const recentChecks = monitorIds.length > 0
+          ? await this.prisma.checkResult.findMany({
+              where: {
+                monitorId: { in: monitorIds },
+                checkedAt: { gte: ninetyDaysAgo },
+              },
+              orderBy: { checkedAt: 'desc' },
+              select: { state: true, checkedAt: true },
+            })
+          : [];
+
+        const dayMap = new Map<string, string[]>();
+        for (const check of recentChecks) {
+          const day = check.checkedAt.toISOString().slice(0, 10);
+          const arr = dayMap.get(day) ?? [];
+          arr.push(check.state);
+          dayMap.set(day, arr);
+        }
+
+        const days: Array<{ date: string; status: string }> = [];
+        const statusOrder = { DOWN: 0, DEGRADED: 1, HEALTHY: 2, PENDING: 3 };
+
+        for (let i = 89; i >= 0; i--) {
+          const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          const key = d.toISOString().slice(0, 10);
+          const states = dayMap.get(key);
+          if (states && states.length > 0) {
+            const worst = states.sort(
+              (a, b) => (statusOrder[a as keyof typeof statusOrder] ?? 99) - (statusOrder[b as keyof typeof statusOrder] ?? 99),
+            )[0];
+            days.push({ date: key, status: worst });
+          } else {
+            days.push({ date: key, status: 'PENDING' });
+          }
+        }
+
+        const totalDays = days.length;
+        const healthyDays = days.filter((d) => d.status === 'HEALTHY').length;
+        const uptimePercent = totalDays > 0 ? (healthyDays / totalDays) * 100 : 0;
+
+        return {
+          id: s.id,
+          serviceId: s.serviceId,
+          name: s.displayName ?? s.service.name,
+          groupName: s.groupName,
+          isVisible: s.isVisible,
+          status,
+          latencyMs: latestCheck?.latencyMs ?? null,
+          uptime: days,
+          uptimePercent: Math.round(uptimePercent * 100) / 100,
+        };
+      }),
+    );
+
+    const statusOrderVal = { DOWN: 0, DEGRADED: 1, HEALTHY: 2, PENDING: 3 };
+    function computeOverallVal(services: Array<{ status: string }>): string {
+      let worst = 'HEALTHY';
+      for (const s of services) {
+        if ((statusOrderVal[s.status as keyof typeof statusOrderVal] ?? 99) < (statusOrderVal[worst as keyof typeof statusOrderVal] ?? 99)) {
+          worst = s.status;
+        }
+      }
+      return worst;
+    }
+
+    const overallStatus = computeOverallVal(servicesWithUptime);
+
+    const incidents = await this.prisma.incident.findMany({
+      where: {
+        workspaceId: page.workspaceId,
+        status: 'RESOLVED',
+      },
+      include: {
+        updates: {
+          orderBy: { createdAt: 'asc' },
+          select: { kind: true, body: true, createdAt: true },
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+      take: 30,
+    });
+
+    const statusMap: Record<string, string> = {
+      HEALTHY: 'operational',
+      DEGRADED: 'degraded_performance',
+      DOWN: 'major_outage',
+      PENDING: 'unknown',
+    };
+
+    return {
+      page: {
+        name: page.name,
+        slug: page.slug,
+        headline: page.headline,
+        logoUrl: page.logoUrl,
+        faviconUrl: page.faviconUrl,
+        brandColor: page.brandColor,
+        footerText: page.footerText,
+        theme: page.theme,
+        darkLogoUrl: page.darkLogoUrl,
+        logoLinkUrl: page.logoLinkUrl,
+      },
+      overall: statusMap[overallStatus] ?? 'unknown',
+      updatedAt: page.updatedAt.toISOString(),
+      services: servicesWithUptime.map((s) => ({
+        id: s.id,
+        name: s.name,
+        groupName: s.groupName,
+        isVisible: s.isVisible,
+        status: statusMap[s.status] ?? 'unknown',
+        latencyMs: s.latencyMs,
+        uptime: s.uptime,
+        uptimePercent: s.uptimePercent,
+      })),
+      incidents: incidents.map((inc) => ({
+        id: inc.id,
+        title: inc.title,
+        status: inc.status,
+        severity: inc.severity,
+        startedAt: inc.startedAt.toISOString(),
+        resolvedAt: inc.resolvedAt?.toISOString() ?? null,
+        updates: inc.updates.map((u) => ({
+          kind: u.kind,
+          body: u.body,
+          createdAt: u.createdAt.toISOString(),
+        })),
+      })),
     };
   }
 
@@ -266,6 +441,9 @@ export class StatusPagesService {
       faviconUrl: page.faviconUrl,
       brandColor: page.brandColor,
       footerText: page.footerText,
+      theme: page.theme,
+      darkLogoUrl: page.darkLogoUrl,
+      logoLinkUrl: page.logoLinkUrl,
       createdAt: page.createdAt,
       updatedAt: page.updatedAt,
       workspaceId: page.workspaceId,

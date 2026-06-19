@@ -14,7 +14,7 @@ npm install @sonar/sdk
 import Sonar from '@sonar/sdk'
 
 const sonar = new Sonar({
-  projectKey: process.env.SONAR_PROJECT_KEY!,
+  apiKey: process.env.SONAR_API_KEY!,
   environment: process.env.SONAR_ENVIRONMENT || 'development',
 })
 
@@ -49,11 +49,10 @@ app.use(sonar.middleware())
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `projectKey` | `string` | required | Your Sonar project ID |
+| `apiKey` | `string` | required | Your Sonar API key |
 | `environment` | `string` | required | e.g. `production`, `staging` |
 | `release` | `string` | `undefined` | Current release version |
-| `captureUser` | `boolean` | `false` | Attach environment context |
-| `endpoint` | `string` | `https://api.sonar.app` | API base URL |
+| `endpoint` | `string` | `http://localhost:8080` | API base URL |
 
 ### `captureError(error, options?)`
 

@@ -101,9 +101,7 @@ export class SmartScreenshotCapture {
     }
 
     if (this.opts.triggers.onUnload) {
-      window.addEventListener('beforeunload', () => {
-        if (this.queue.length > 0 || this.capturing) this.flushSync()
-      })
+      window.addEventListener('beforeunload', () => this.flushSync())
     }
   }
 
@@ -157,10 +155,8 @@ export class SmartScreenshotCapture {
   }
 
   private flushSync() {
-    if (!this.opts.enabled || this.queue.length === 0) return
-    this.capturing = true
-    while (this.queue.length > 0) { this.queue.shift() }
-    this.capturing = false
+    if (this.queue.length === 0 || !this.opts.enabled) return
+    this.process()
   }
 
   destroy() {

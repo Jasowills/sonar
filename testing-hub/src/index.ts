@@ -5,13 +5,14 @@ import express from 'express'
 import { monitorRouter } from './routes/monitor-routes.js'
 import { statusRouter } from './routes/status-routes.js'
 import { triggerRouter } from './routes/trigger-routes.js'
+import { activityRouter } from './routes/activity.js'
 import { sonar, checkSdkStatus } from './sonar.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PORT = parseInt(process.env.PORT ?? '3001', 10)
 
 const app = express()
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 const SDK_DIST = resolve(__dirname, '../../packages/sdk/dist')
 app.use('/sdk', express.static(SDK_DIST, { extensions: ['js'] }))
@@ -33,6 +34,7 @@ app.get('/api/sdk-status', async (_req, res) => {
 
 app.use('/api', monitorRouter)
 app.use('/api', statusRouter)
+app.use('/api', activityRouter)
 app.use('/trigger', triggerRouter)
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -40,17 +42,14 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 })
 
 app.listen(PORT, async () => {
-  console.log(`\n  ── testing-hub ──`)
-  console.log(`  web UI         → http://localhost:${PORT}`)
-  console.log(`  analytics test  → http://localhost:${PORT}/analytics`)
-  console.log(`  monitor urls   → http://localhost:${PORT}/api/*`)
-  console.log(`  status pages   → http://localhost:${PORT}/api/status*`)
-  console.log(`  trigger urls   → http://localhost:${PORT}/trigger/*`)
   const sdk = await checkSdkStatus()
-  if (sdk.ok) {
-    console.log(`  Sonar SDK   → ${sdk.message}`)
-  } else {
-    console.log(`  Sonar SDK   → ${sdk.message}`)
-  }
+  console.log(`\n  ── testing-hub ──`)
+  console.log(`  web UI          → http://localhost:${PORT}`)
+  console.log(`  analytics test  → http://localhost:${PORT}/analytics`)
+  console.log(`  activity feed   → http://localhost:${PORT}/api/activity`)
+  console.log(`  monitor urls    → http://localhost:${PORT}/api/*`)
+  console.log(`  status pages    → http://localhost:${PORT}/api/status*`)
+  console.log(`  trigger urls    → http://localhost:${PORT}/trigger/*`)
+  console.log(`  Sonar SDK       → ${sdk.message}`)
   console.log()
 })

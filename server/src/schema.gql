@@ -665,15 +665,18 @@ type SourceResult {
 type StatusPageDetailModel {
   brandColor: String
   createdAt: DateTime!
+  darkLogoUrl: String
   faviconUrl: String
   footerText: String
   headline: String
   id: ID!
+  logoLinkUrl: String
   logoUrl: String
   name: String!
   projectId: String
   services: [ServiceHealthModel!]!
   slug: String!
+  theme: String!
   updatedAt: DateTime!
   visibility: String!
   workspaceId: String!
@@ -683,14 +686,17 @@ type StatusPageDetailModel {
 type StatusPageModel {
   brandColor: String
   createdAt: DateTime!
+  darkLogoUrl: String
   faviconUrl: String
   footerText: String
   headline: String
   id: ID!
+  logoLinkUrl: String
   logoUrl: String
   name: String!
   projectId: String
   slug: String!
+  theme: String!
   updatedAt: DateTime!
   visibility: String!
   workspaceId: String!
@@ -766,12 +772,15 @@ input UpdateServiceInput {
 
 input UpdateStatusPageInput {
   brandColor: String
+  darkLogoUrl: String
   faviconUrl: String
   footerText: String
   headline: String
   id: String!
+  logoLinkUrl: String
   logoUrl: String
   name: String
+  theme: String
   visibility: String
 }
 

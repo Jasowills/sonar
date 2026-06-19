@@ -31,6 +31,15 @@ export class StatusPageDetailModel {
   footerText: string | null;
 
   @Field()
+  theme: string;
+
+  @Field(() => String, { nullable: true })
+  darkLogoUrl: string | null;
+
+  @Field(() => String, { nullable: true })
+  logoLinkUrl: string | null;
+
+  @Field()
   createdAt: Date;
 
   @Field()

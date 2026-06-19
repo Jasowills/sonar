@@ -4,6 +4,7 @@ import type {
   SonarOptions,
   CaptureErrorOptions,
   RecordDeploymentOptions,
+  IngestResponse,
 } from './types'
 
 type NextFunction = (err?: unknown) => void
@@ -21,7 +22,7 @@ export class Sonar {
     this.client.setToken(token)
   }
 
-  captureError(error: Error, options?: CaptureErrorOptions) {
+  async captureError(error: Error, options?: CaptureErrorOptions): Promise<IngestResponse | undefined> {
     const fingerprint =
       options?.fingerprint ??
       `${error.constructor.name}: ${error.message}`
@@ -34,10 +35,12 @@ export class Sonar {
       metadata: options?.metadata,
     }
 
-    this.client.ingestError(payload).catch((err: unknown) => {
+    try {
+      return await this.client.ingestError(payload)
+    } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       console.error(`[Sonar] ${msg}`)
-    })
+    }
   }
 
   async recordDeployment(options: RecordDeploymentOptions) {
