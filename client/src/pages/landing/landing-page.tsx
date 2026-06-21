@@ -10,6 +10,7 @@ import {
   BarChart3,
   BellRing,
   Check,
+  Copy,
   LifeBuoy,
   Package,
   Radar,
@@ -209,6 +210,21 @@ function Hero({ onNavigate }: { onNavigate: (target: string) => void }) {
           Uptime checks, error tracing, web analytics, alerting,
           and incident response on one surface.
         </p>
+
+        <div data-hero-item className="mt-8 flex justify-center">
+          <pre className="inline-flex items-center gap-3 rounded-full border border-[var(--border-soft)] bg-[var(--surface-panel)] pl-5 pr-4 py-2.5 text-sm font-[var(--font-mono)] text-[var(--text-muted)]">
+            <span className="text-[var(--text-soft)]">$</span>
+            <span className="text-[var(--text-main)]">npm install @sonar/sdk</span>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText('npm install @sonar/sdk')}
+              className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-soft)] transition-colors hover:bg-[var(--surface-panel-soft)] hover:text-[var(--text-main)]"
+              aria-label="Copy command"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </pre>
+        </div>
 
         <div
           data-hero-item
