@@ -13,3 +13,5 @@ server/dist/
 design.md
 product.md
 packages/*/node_modules/
+.vercel
+.env*

@@ -5,9 +5,9 @@ export function ConnectSnippet({ envKey }: { envKey: string }) {
         Add the Sonar SDK to your project:
       </p>
       <pre className="border border-[var(--border-soft)] bg-[var(--surface-panel-soft)] p-4 text-xs text-[var(--text-main)] overflow-x-auto">
-{`npm install @sonar/sdk
+{`npm install sonar-sdk
 
-import { Sonar } from '@sonar/sdk'
+import { Sonar } from 'sonar-sdk'
 
 const sonar = new Sonar({
   apiKey: process.env.SONAR_API_KEY,

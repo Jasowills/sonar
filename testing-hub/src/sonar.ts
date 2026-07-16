@@ -1,4 +1,4 @@
-import { Sonar } from '@sonar/sdk'
+import { Sonar } from 'sonar-sdk'
 
 const ENDPOINT = process.env.SONAR_ENDPOINT ?? 'http://localhost:8080'
 const API_KEY = process.env.SONAR_API_KEY

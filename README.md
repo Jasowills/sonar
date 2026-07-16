@@ -8,7 +8,7 @@ Monorepo with three packages:
 
 - **`client/`** — React frontend (Vite, Tailwind CSS). Product dashboard, public status pages, and the testing hub for SDK integration.
 - **`server/`** — NestJS GraphQL API (Apollo, Prisma, MongoDB). Ingests analytics and uptime check data, runs incident lifecycle, routes alerts, and serves the dashboard frontend.
-- **`packages/sdk/`** — `@sonar/sdk` (TypeScript, conditional browser exports). First-party SDK shipped into client apps. Covers error capture, deploy tracking, uptime monitoring, web analytics with frustration detection and smart screenshots, and cookie consent.
+- **`packages/sdk/`** — `sonar-sdk` (TypeScript, conditional browser exports). First-party SDK shipped into client apps. Covers error capture, deploy tracking, uptime monitoring, web analytics with frustration detection and smart screenshots, and cookie consent.
 
 ## Stack
 
@@ -86,7 +86,7 @@ See `.env.example` for the full list.
 │   │   ├── cloudinary/  # Image and video upload service
 │   │   └── status-pages/# Public status page management
 │   └── test/
-├── packages/sdk/        # @sonar/sdk
+├── packages/sdk/        # sonar-sdk
 │   └── src/browser/     # Browser-specific modules (analytics, frustration, screenshots, consent)
 └── testing-hub/         # HTML page for SDK integration testing
 ```

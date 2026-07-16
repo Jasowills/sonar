@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@sonar/sdk": "file:../packages/sdk",
+    "sonar-sdk": "file:../packages/sdk",
     "express": "^5.1.0"
   },
   "devDependencies": {

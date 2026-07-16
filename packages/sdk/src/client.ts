@@ -1,6 +1,6 @@
 import type { SonarOptions, CaptureErrorPayload, RecordDeploymentOptions, IngestResponse } from './types'
 
-const DEFAULT_ENDPOINT = 'http://localhost:8080'
+const DEFAULT_ENDPOINT = 'https://sonar-api-xi.vercel.app'
 
 export class SonarClient {
   private environment: string

@@ -1,17 +1,17 @@
-# @sonar/sdk
+# sonar-sdk
 
 Official Node.js SDK for [Sonar](https://sonar.app) — error capture, deploy tracking, and uptime monitoring.
 
 ## Installation
 
 ```bash
-npm install @sonar/sdk
+npm install sonar-sdk
 ```
 
 ## Usage
 
 ```typescript
-import Sonar from '@sonar/sdk'
+import Sonar from 'sonar-sdk'
 
 const sonar = new Sonar({
   apiKey: process.env.SONAR_API_KEY!,

@@ -24,10 +24,10 @@ export class SonarWeb implements AutoTrackerHost, FrustrationHost {
 
   constructor(options: SonarWebOptions) {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
-      throw new Error('@sonar/sdk browser module can only be used in a browser environment')
+      throw new Error('sonar-sdk browser module can only be used in a browser environment')
     }
 
-    const endpoint = options.endpoint ?? 'http://localhost:8080'
+    const endpoint = options.endpoint ?? 'https://sonar-api-xi.vercel.app'
     const bannerOpts = typeof options.consent?.banner === 'object' ? options.consent.banner : undefined
     this.consent = new ConsentManager(bannerOpts)
     this.visitor = new VisitorManager()

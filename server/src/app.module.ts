@@ -42,7 +42,9 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     PrismaModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: process.env.NODE_ENV === 'production'
+        ? '/tmp/schema.gql'
+        : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       introspection: process.env.NODE_ENV !== 'production',
       plugins: [],

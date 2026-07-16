@@ -1,6 +1,6 @@
 {
-  "name": "@sonar/sdk",
-  "version": "0.1.0",
+  "name": "sonar-sdk",
+  "version": "0.2.0",
   "description": "Sonar SDK — error capture, deploy tracking, uptime monitoring, and web analytics.",
   "license": "MIT",
   "type": "module",

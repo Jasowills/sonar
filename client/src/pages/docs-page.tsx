@@ -114,7 +114,7 @@ const content: Record<string, DocPage> = {
 #      }) { id name latestState }
 #    }
 # 5. Install the SDK and send your first error:
-#    npm install @sonar/sdk`,
+#    npm install sonar-sdk`,
     sections: [
       {
         heading: 'Verify it works',
@@ -126,11 +126,11 @@ const content: Record<string, DocPage> = {
     title: 'Installation',
     body: 'Install the Sonar SDK in your application to automatically capture errors and track deployments.',
     code: `# Node.js / TypeScript
-npm install @sonar/sdk
+npm install sonar-sdk
 # or
-yarn add @sonar/sdk
+yarn add sonar-sdk
 # or
-pnpm add @sonar/sdk
+pnpm add sonar-sdk
 
 # Python
 pip install sonar-sdk
@@ -156,7 +156,7 @@ SONAR_ENVIRONMENT=production
 SONAR_RELEASE=v1.2.3
 
 // Or pass inline (Node.js example)
-import Sonar from '@sonar/sdk'
+import Sonar from 'sonar-sdk'
 
 const wd = new Sonar({
   projectKey: process.env.SONAR_PROJECT_KEY,
@@ -179,7 +179,7 @@ const wd = new Sonar({
   'sdk-node.js': {
     title: 'Node.js SDK',
     body: 'The Node.js SDK captures uncaught exceptions, unhandled promise rejections, and provides a manual capture API. It integrates with Express, Next.js, and other frameworks.',
-    code: `import Sonar from '@sonar/sdk'
+    code: `import Sonar from 'sonar-sdk'
 
 const wd = new Sonar({
   projectKey: process.env.SONAR_PROJECT_KEY,
@@ -689,7 +689,7 @@ mutation RemoveService {
     title: 'Express.js',
     body: 'Integrate Sonar with an Express.js application. The middleware captures request-scoped errors and attaches route context automatically.',
     code: `import express from 'express'
-import Sonar from '@sonar/sdk'
+import Sonar from 'sonar-sdk'
 
 const app = express()
 const wd = new Sonar({
@@ -726,7 +726,7 @@ app.listen(3000)`,
     title: 'Next.js (App Router)',
     body: 'Integrate Sonar with Next.js App Router. The SDK captures server-side errors and supports both API routes and server components.',
     code: `// app/api/sonar/route.ts
-import Sonar from '@sonar/sdk'
+import Sonar from 'sonar-sdk'
 
 const wd = new Sonar({
   projectKey: process.env.SONAR_PROJECT_KEY!,
@@ -856,7 +856,7 @@ curl -s -X POST https://api.sonar.app/ingest/deployments \\
   'sdk-web': {
     title: 'Web SDK',
     body: 'The Sonar Web SDK captures page views, clicks, scrolls, form submissions, console errors, and session recordings directly from the browser — with GDPR-friendly cookie consent built in.',
-    code: `import { SonarWeb } from '@sonar/sdk/browser'
+    code: `import { SonarWeb } from 'sonar-sdk/browser'
 
 const sonar = new SonarWeb({
   apiKey: 'wdp_xxxx_yyyy',
@@ -888,7 +888,7 @@ if (sonar.getConsent() === 'granted') {
     sections: [
       {
         heading: 'Installation',
-        text: 'The Web SDK is included in the @sonar/sdk package. Use the /browser subpath to import it. In a module-based setup, import { SonarWeb } from "@sonar/sdk/browser". The bundler resolves the browser entry automatically for web projects.',
+        text: 'The Web SDK is included in the sonar-sdk package. Use the /browser subpath to import it. In a module-based setup, import { SonarWeb } from "sonar-sdk/browser". The bundler resolves the browser entry automatically for web projects.',
       },
       {
         heading: 'Auto-tracking',
@@ -954,7 +954,7 @@ Authorization: Bearer <api-key>
       },
       {
         heading: 'Framework integration',
-        text: 'For React, Vue, or Angular apps, install @sonar/sdk as a dependency. Import SonarWeb from "@sonar/sdk/browser" and initialize it in your app entry point (e.g., main.tsx or App.tsx). The auto-tracking module will automatically intercept pushState calls for SPA route changes.',
+        text: 'For React, Vue, or Angular apps, install sonar-sdk as a dependency. Import SonarWeb from "sonar-sdk/browser" and initialize it in your app entry point (e.g., main.tsx or App.tsx). The auto-tracking module will automatically intercept pushState calls for SPA route changes.',
       },
       {
         heading: 'Understanding the dashboard',
